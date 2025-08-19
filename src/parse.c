@@ -172,6 +172,17 @@ static Node *declaration(Token **rest, Token *tok) {
 //      | "{" compound-stmt
 //      | expr-stmt
 static Node *stmt(Token **rest, Token *tok) {
+  if (equal(tok, "print")) {
+    // Obsługa: print(...)
+    Node *node = new_node(ND_FUNCALL, tok);
+    node->funcname = "print";
+    tok = skip(tok->next, "(");
+    node->args = expr(&tok, tok);
+    tok = skip(tok, ")");
+    *rest = skip(tok, ";");  // ważne: print(1); - pomijamy średnik
+    return node;
+  }
+
   if (equal(tok, "return")) {
     Node *node = new_node(ND_RETURN, tok);
     node->lhs = expr(&tok, tok->next);
@@ -223,6 +234,7 @@ static Node *stmt(Token **rest, Token *tok) {
 
   return expr_stmt(rest, tok);
 }
+
 
 // compound-stmt = (declaration | stmt)* "}"
 static Node *compound_stmt(Token **rest, Token *tok) {

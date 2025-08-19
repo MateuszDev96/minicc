@@ -90,6 +90,13 @@ static void gen_expr(Node *node) {
       store();
       return;
     case ND_FUNCALL: {
+      if (strcmp(node->funcname, "print") == 0) {
+        gen_expr(node->args);
+        printf("  li a7, 1\n");
+        printf("  ecall\n");
+        return;
+      }
+
       int nargs = 0;
       for (Node *arg = node->args; arg; arg = arg->next) {
         gen_expr(arg);
@@ -198,10 +205,12 @@ static void gen_stmt(Node *node) {
 static void assign_lvar_offsets(Function *prog) {
   for (Function *fn = prog; fn; fn = fn->next) {
     int offset = 0;
+    
     for (Obj *var = fn->locals; var; var = var->next) {
       offset += var->ty->size;
       var->offset = -offset;
     }
+
     fn->stack_size = align_to(offset, 16);
   }
 }
