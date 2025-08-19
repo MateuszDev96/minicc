@@ -1,6 +1,10 @@
 {
   "files.associations": {
     "stdio.h": "c",
-    "minicc.h": "c"
+    "minicc.h": "c",
+    "bit": "c",
+    "compare": "c",
+    "limits": "c",
+    "new": "c"
   }
 }

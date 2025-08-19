@@ -14,7 +14,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ../src/minicc "$input" > tmp.s || exit
+  ../build/minicc "$input" > tmp.s || exit
 
   riscv64-linux-gnu-gcc -static -o tmp tmp.s tmp2.o
   qemu-riscv64-static ./tmp

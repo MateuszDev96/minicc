@@ -205,7 +205,7 @@ static void gen_stmt(Node *node) {
 static void assign_lvar_offsets(Function *prog) {
   for (Function *fn = prog; fn; fn = fn->next) {
     int offset = 0;
-    
+
     for (Obj *var = fn->locals; var; var = var->next) {
       offset += var->ty->size;
       var->offset = -offset;

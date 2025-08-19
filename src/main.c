@@ -1,6 +1,6 @@
 #include "minicc.h"
 
-#define INLINE_CODE false
+#define INLINE_CODE true
 
 #if INLINE_CODE == true
   int main(int argc, char **argv) {

@@ -37,8 +37,9 @@ Type *array_of(Type *base, int len) {
 }
 
 void add_type(Node *node) {
-  if (!node || node->ty)
+  if (!node || node->ty) {
     return;
+  }
 
   add_type(node->lhs);
   add_type(node->rhs);
@@ -48,44 +49,61 @@ void add_type(Node *node) {
   add_type(node->init);
   add_type(node->inc);
 
-  for (Node *n = node->body; n; n = n->next)
+  for (Node *n = node->body; n; n = n->next) {
     add_type(n);
-  for (Node *n = node->args; n; n = n->next)
+  }
+
+  for (Node *n = node->args; n; n = n->next) {
     add_type(n);
+  }
 
   switch (node->kind) {
     case ND_ADD:
     case ND_SUB:
     case ND_MUL:
     case ND_DIV:
-    case ND_NEG:
+    case ND_NEG: {
       node->ty = node->lhs->ty;
       return;
-    case ND_ASSIGN:
-      if (node->lhs->ty->kind == TY_ARRAY)
+    }
+
+    case ND_ASSIGN: {
+      if (node->lhs->ty->kind == TY_ARRAY) {
         error_tok(node->lhs->tok, "not an lvalue");
+      }
+
       node->ty = node->lhs->ty;
       return;
+    }
     case ND_EQ:
     case ND_NE:
     case ND_LT:
     case ND_LE:
     case ND_NUM:
-    case ND_FUNCALL:
+    case ND_FUNCALL: {
       node->ty = ty_int;
       return;
-    case ND_VAR:
+    }
+
+    case ND_VAR: {
       node->ty = node->var->ty;
       return;
-    case ND_ADDR:
-      if (node->lhs->ty->kind == TY_ARRAY)
+    }
+
+    case ND_ADDR: {
+      if (node->lhs->ty->kind == TY_ARRAY) {
         node->ty = pointer_to(node->lhs->ty->base);
-      else
+      } else {
         node->ty = pointer_to(node->lhs->ty);
+      }
+
       return;
+    }
     case ND_DEREF:
-      if (!node->lhs->ty->base)
+      if (!node->lhs->ty->base) {
         error_tok(node->tok, "invalid pointer dereference");
+      }
+
       node->ty = node->lhs->ty->base;
       return;
     default:

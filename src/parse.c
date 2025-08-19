@@ -172,17 +172,6 @@ static Node *declaration(Token **rest, Token *tok) {
 //      | "{" compound-stmt
 //      | expr-stmt
 static Node *stmt(Token **rest, Token *tok) {
-  if (equal(tok, "print")) {
-    // Obsługa: print(...)
-    Node *node = new_node(ND_FUNCALL, tok);
-    node->funcname = "print";
-    tok = skip(tok->next, "(");
-    node->args = expr(&tok, tok);
-    tok = skip(tok, ")");
-    *rest = skip(tok, ";");  // ważne: print(1); - pomijamy średnik
-    return node;
-  }
-
   if (equal(tok, "return")) {
     Node *node = new_node(ND_RETURN, tok);
     node->lhs = expr(&tok, tok->next);
@@ -232,9 +221,9 @@ static Node *stmt(Token **rest, Token *tok) {
   if (equal(tok, "{"))
     return compound_stmt(rest, tok->next);
 
+  // Wszystko inne traktuj jako wyrażenie w instrukcji
   return expr_stmt(rest, tok);
 }
-
 
 // compound-stmt = (declaration | stmt)* "}"
 static Node *compound_stmt(Token **rest, Token *tok) {
@@ -273,7 +262,6 @@ static Node *expr(Token **rest, Token *tok) {
   return assign(rest, tok);
 }
 
-// assign = equality ("=" assign)?
 static Node *assign(Token **rest, Token *tok) {
   Node *node = equality(&tok, tok);
 
@@ -284,7 +272,6 @@ static Node *assign(Token **rest, Token *tok) {
   return node;
 }
 
-// equality = relational ("==" relational | "!=" relational)*
 static Node *equality(Token **rest, Token *tok) {
   Node *node = relational(&tok, tok);
 
@@ -306,7 +293,6 @@ static Node *equality(Token **rest, Token *tok) {
   }
 }
 
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 static Node *relational(Token **rest, Token *tok) {
   Node *node = add(&tok, tok);
 
@@ -338,44 +324,35 @@ static Node *relational(Token **rest, Token *tok) {
   }
 }
 
-// In C, `+` operator is overloaded to perform the pointer arithmetic.
-// If p is a pointer, p+n adds not n but sizeof(*p)*n to the value of p,
-// so that p+n points to the location n elements (not bytes) ahead of p.
-// In other words, we need to scale an integer value before adding to a
-// pointer value. This function takes care of the scaling.
 static Node *new_add(Node *lhs, Node *rhs, Token *tok) {
   add_type(lhs);
   add_type(rhs);
 
-  // num + num
   if (is_integer(lhs->ty) && is_integer(rhs->ty))
     return new_binary(ND_ADD, lhs, rhs, tok);
 
   if (lhs->ty->base && rhs->ty->base)
     error_tok(tok, "invalid operands");
 
-  // Canonicalize `num + ptr` to `ptr + num`.
   if (!lhs->ty->base && rhs->ty->base) {
     Node *tmp = lhs;
     lhs = rhs;
     rhs = tmp;
   }
 
-  // ptr + num
   rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+
   return new_binary(ND_ADD, lhs, rhs, tok);
 }
 
-// Like `+`, `-` is overloaded for the pointer type.
 static Node *new_sub(Node *lhs, Node *rhs, Token *tok) {
   add_type(lhs);
   add_type(rhs);
 
-  // num - num
-  if (is_integer(lhs->ty) && is_integer(rhs->ty))
+  if (is_integer(lhs->ty) && is_integer(rhs->ty)) {
     return new_binary(ND_SUB, lhs, rhs, tok);
+  }
 
-  // ptr - num
   if (lhs->ty->base && is_integer(rhs->ty)) {
     rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
     add_type(rhs);
@@ -384,7 +361,6 @@ static Node *new_sub(Node *lhs, Node *rhs, Token *tok) {
     return node;
   }
 
-  // ptr - ptr, which returns how many elements are between the two.
   if (lhs->ty->base && rhs->ty->base) {
     Node *node = new_binary(ND_SUB, lhs, rhs, tok);
     node->ty = ty_int;
@@ -395,7 +371,6 @@ static Node *new_sub(Node *lhs, Node *rhs, Token *tok) {
   return NULL;
 }
 
-// add = mul ("+" mul | "-" mul)*
 static Node *add(Token **rest, Token *tok) {
   Node *node = mul(&tok, tok);
 
@@ -417,7 +392,6 @@ static Node *add(Token **rest, Token *tok) {
   }
 }
 
-// mul = unary ("*" unary | "/" unary)*
 static Node *mul(Token **rest, Token *tok) {
   Node *node = unary(&tok, tok);
 
@@ -438,30 +412,30 @@ static Node *mul(Token **rest, Token *tok) {
   }
 }
 
-// unary = ("+" | "-" | "*" | "&") unary
-//       | primary
 static Node *unary(Token **rest, Token *tok) {
-  if (equal(tok, "+"))
+  if (equal(tok, "+")) {
     return unary(rest, tok->next);
+  }
 
-  if (equal(tok, "-"))
+  if (equal(tok, "-")) {
     return new_unary(ND_NEG, unary(rest, tok->next), tok);
+  }
 
-  if (equal(tok, "&"))
+  if (equal(tok, "&")) {
     return new_unary(ND_ADDR, unary(rest, tok->next), tok);
+  }
 
-  if (equal(tok, "*"))
+  if (equal(tok, "*")) {
     return new_unary(ND_DEREF, unary(rest, tok->next), tok);
+  }
 
   return postfix(rest, tok);
 }
 
-// postfix = primary ("[" expr "]")*
 static Node *postfix(Token **rest, Token *tok) {
   Node *node = primary(&tok, tok);
 
   while (equal(tok, "[")) {
-    // x[y] is short for *(x+y)
     Token *start = tok;
     Node *idx = expr(&tok, tok->next);
     tok = skip(tok, "]");
@@ -471,7 +445,6 @@ static Node *postfix(Token **rest, Token *tok) {
   return node;
 }
 
-// funcall = ident "(" (assign ("," assign)*)? ")"
 static Node *funcall(Token **rest, Token *tok) {
   Token *start = tok;
   tok = tok->next->next;
@@ -493,7 +466,6 @@ static Node *funcall(Token **rest, Token *tok) {
   return node;
 }
 
-// primary = "(" expr ")" | "sizeof" unary | ident func-args? | num
 static Node *primary(Token **rest, Token *tok) {
   if (equal(tok, "(")) {
     Node *node = expr(&tok, tok->next);
@@ -508,14 +480,16 @@ static Node *primary(Token **rest, Token *tok) {
   }
 
   if (tok->kind == TK_IDENT) {
-    // Function call
-    if (equal(tok->next, "("))
+    if (equal(tok->next, "(")) {
       return funcall(rest, tok);
+    }
 
-    // Variable
     Obj *var = find_var(tok);
-    if (!var)
+    
+    if (!var) {
       error_tok(tok, "undefined variable");
+    }
+
     *rest = tok->next;
     return new_var_node(var, tok);
   }
@@ -555,7 +529,6 @@ static Function *function(Token **rest, Token *tok) {
   return fn;
 }
 
-// program = function-definition*
 Function *parse(Token *tok) {
   Function head = {};
   Function *cur = &head;

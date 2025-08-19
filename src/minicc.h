@@ -11,26 +11,22 @@
 typedef struct Type Type;
 typedef struct Node Node;
 
-//
-// tokenize.c
-//
-
 typedef enum {
-  TK_IDENT, // Identifiers
-  TK_PUNCT,   // Punctuators
-  TK_KEYWORD, // Keywords
-  TK_NUM,   // Numeric literals
-  TK_EOF,   // End-of-file markers
+  TK_IDENT,
+  TK_PUNCT,
+  TK_KEYWORD,
+  TK_NUM,
+  TK_EOF,
 } TokenKind;
 
 // Token type
 typedef struct Token Token;
 struct Token {
-  TokenKind kind; // Token kind
-  Token *next;    // Next token
-  int val;        // If kind is TK_NUM, its value
-  char *loc;      // Token location
-  int len;        // Token length
+  TokenKind kind;
+  Token *next;
+  int val;
+  char *loc;
+  int len;
 };
 
 void error(char *fmt, ...);
@@ -41,17 +37,12 @@ Token *skip(Token *tok, char *op);
 bool consume(Token **rest, Token *tok, char *str);
 Token *tokenize(char *input);
 
-//
-// parse.c
-//
-
-// Local variable
 typedef struct Obj Obj;
 struct Obj {
   Obj *next;
-  char *name; // Variable name
-  Type *ty;   // Type
-  int offset; // Offset from fp
+  char *name;
+  Type *ty;
+  int offset;
 };
 
 // Function
@@ -89,40 +80,27 @@ typedef enum {
   ND_NUM,       // Integer
 } NodeKind;
 
-// AST node type
 typedef struct Node Node;
 struct Node {
-  NodeKind kind; // Node kind
-  Node *next;    // Next node
-  Type *ty;      // Type, e.g. int or pointer to int
-  Token *tok;    // Representative token
-
-  Node *lhs;     // Left-hand side
-  Node *rhs;     // Right-hand side
-
-  // "if" or "for" statement
+  NodeKind kind;
+  Node *next;
+  Type *ty;
+  Token *tok;
+  Node *lhs;
+  Node *rhs;
   Node *cond;
   Node *then;
   Node *els;
   Node *init;
   Node *inc;
-
-  // Block
   Node *body;
-
-  // Function call
   char *funcname;
   Node *args;
-
-  Obj *var;      // Used if kind == ND_VAR
-  int val;       // Used if kind == ND_NUM
+  Obj *var;
+  int val;
 };
 
 Function *parse(Token *tok);
-
-//
-// type.c
-//
 
 typedef enum {
   TY_INT,
@@ -134,17 +112,9 @@ typedef enum {
 struct Type {
   TypeKind kind;
   int size;
-
-  // Pointer
   Type *base;
-
-  // Declaration
   Token *name;
-
-  // Array
   int array_len;
-
-  // Function type
   Type *return_ty;
   Type *params;
   Type *next;
@@ -158,9 +128,4 @@ Type *pointer_to(Type *base);
 Type *func_type(Type *return_ty);
 Type *array_of(Type *base, int size);
 void add_type(Node *node);
-
-//
-// codegen.c
-//
-
 void codegen(Function *prog);
