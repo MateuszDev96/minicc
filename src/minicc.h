@@ -19,7 +19,6 @@ typedef enum {
   TK_EOF,
 } TokenKind;
 
-// Token type
 typedef struct Token Token;
 struct Token {
   TokenKind kind;
@@ -45,7 +44,6 @@ struct Obj {
   int offset;
 };
 
-// Function
 typedef struct Function Function;
 struct Function {
   Function *next;

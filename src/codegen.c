@@ -30,34 +30,31 @@ static int align_to(int n, int align) {
 
 static void gen_addr(Node *node) {
   switch (node->kind) {
-    case ND_VAR:
+    case ND_VAR: {
       printf("  addi a0, fp, %d\n", node->var->offset);
       return;
-    case ND_DEREF:
+    }
+
+    case ND_DEREF: {
       gen_expr(node->lhs);
       return;
+    }
+
     default:
       break;
   }
+
   error_tok(node->tok, "not an lvalue");
 }
 
-// Load a value from where %rax is pointing to.
 static void load(Type *ty) {
   if (ty->kind == TY_ARRAY) {
-    // If it is an array, do not attempt to load a value to the
-    // register because in general we can't load an entire array to a
-    // register. As a result, the result of an evaluation of an array
-    // becomes not the array itself but the address of the array.
-    // This is where "array is automatically converted to a pointer to
-    // the first element of the array in C" occurs.
     return;
   }
 
   printf("  ld a0, 0(a0)\n");
 }
 
-// Store %rax to an address that the stack top is pointing to.
 static void store(void) {
   pop("a1");
   printf("  sd a0, 0(a1)\n");
@@ -65,30 +62,42 @@ static void store(void) {
 
 static void gen_expr(Node *node) {
   switch (node->kind) {
-    case ND_NUM:
+    case ND_NUM: {
       printf("  li a0, %d\n", node->val);
       return;
-    case ND_NEG:
+    }
+
+    case ND_NEG: {
       gen_expr(node->lhs);
       printf("  neg a0, a0\n");
       return;
-    case ND_VAR:
+    }
+
+    case ND_VAR: {
       gen_addr(node);
       load(node->ty);
       return;
-    case ND_DEREF:
+    }
+
+    case ND_DEREF: {
       gen_expr(node->lhs);
       load(node->ty);
       return;
-    case ND_ADDR:
+    }
+
+    case ND_ADDR: {
       gen_addr(node->lhs);
       return;
-    case ND_ASSIGN:
+    }
+
+    case ND_ASSIGN: {
       gen_addr(node->lhs);
       push();
       gen_expr(node->rhs);
       store();
       return;
+    }
+
     case ND_FUNCALL: {
       if (strcmp(node->funcname, "print") == 0) {
         gen_expr(node->args);
@@ -104,8 +113,9 @@ static void gen_expr(Node *node) {
         nargs++;
       }
 
-      for (int i = nargs - 1; i >= 0; i--)
+      for (int i = nargs - 1; i >= 0; i--) {
         pop(argreg[i]);
+      }
 
       printf("  call %s\n", node->funcname);
       return;
@@ -120,33 +130,47 @@ static void gen_expr(Node *node) {
   pop("a1");
 
   switch (node->kind) {
-    case ND_ADD:
+    case ND_ADD: {
       printf("  add a0, a0, a1\n");
       return;
-    case ND_SUB:
+    }
+
+    case ND_SUB: {
       printf("  sub a0, a0, a1\n");
       return;
-    case ND_MUL:
+    }
+
+    case ND_MUL: {
       printf("  mul a0, a0, a1\n");
       return;
-    case ND_DIV:
+    }
+
+    case ND_DIV: {
       printf("  div a0, a0, a1\n");
       return;
+    }
+
     case ND_EQ:
-    case ND_NE:
+    case ND_NE: {
       printf("  xor a0, a0, a1\n");
       if (node->kind == ND_EQ)
         printf("  seqz a0, a0\n");
       else
         printf("  snez a0, a0\n");
       return;
-    case ND_LT:
+    }
+
+    case ND_LT: {
       printf("  slt a0, a0, a1\n");
       return;
-    case ND_LE:
+    }
+
+    case ND_LE: {
       printf("  slt a0, a1, a0\n");
       printf("  xori a0, a0, 1\n");
       return;
+    }
+
     default:
       break;
   }
@@ -158,43 +182,65 @@ static void gen_stmt(Node *node) {
   switch (node->kind) {
     case ND_IF: {
       int c = count();
+
       gen_expr(node->cond);
       printf("  beqz a0, .L.else.%d\n", c);
       gen_stmt(node->then);
       printf("  j .L.end.%d\n", c);
       printf(".L.else.%d:\n", c);
-      if (node->els)
+
+      if (node->els) {
         gen_stmt(node->els);
+      }
+
       printf(".L.end.%d:\n", c);
       return;
     }
+
     case ND_FOR: {
       int c = count();
-      if (node->init)
+      
+      if (node->init) {
         gen_stmt(node->init);
+      }
+
       printf(".L.begin.%d:\n", c);
+
       if (node->cond) {
         gen_expr(node->cond);
         printf("  beqz a0, .L.end.%d\n", c);
       }
+
       gen_stmt(node->then);
-      if (node->inc)
+
+      if (node->inc) {
         gen_expr(node->inc);
+      }
+
       printf("  j .L.begin.%d\n", c);
       printf(".L.end.%d:\n", c);
       return;
     }
-    case ND_BLOCK:
-      for (Node *n = node->body; n; n = n->next)
+
+    case ND_BLOCK: {
+      for (Node *n = node->body; n; n = n->next) {
         gen_stmt(n);
+      }
+
       return;
-    case ND_RETURN:
+    }
+
+    case ND_RETURN: {
       gen_expr(node->lhs);
       printf("  j .L.return.%s\n", current_fn->name);
       return;
-    case ND_EXPR_STMT:
+    }
+
+    case ND_EXPR_STMT: {
       gen_expr(node->lhs);
       return;
+    }
+
     default:
       break;
   }
@@ -229,10 +275,10 @@ void codegen(Function *prog) {
     printf("  mv fp, sp\n");
     printf("  addi sp, sp, %d\n", -fn->stack_size);
 
-    // Save passed-by-register arguments to the stack
     int i = 0;
-    for (Obj *var = fn->params; var; var = var->next)
+    for (Obj *var = fn->params; var; var = var->next) {
       printf("  sd %s, %d(fp)\n", argreg[i++], var->offset);
+    }
 
     gen_stmt(fn->body);
     assert(depth == 0);
@@ -242,7 +288,6 @@ void codegen(Function *prog) {
     printf("  ld fp, 0(sp)\n");
     printf("  ld ra, 8(sp)\n");
     printf("  addi sp, sp, 16\n");
-
     printf("  ret\n");
   }
 }
