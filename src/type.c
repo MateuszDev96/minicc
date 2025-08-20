@@ -9,6 +9,7 @@ bool is_integer(Type *ty) {
 Type *copy_type(Type *ty) {
   Type *ret = calloc(1, sizeof(Type));
   *ret = *ty;
+
   return ret;
 }
 
@@ -17,6 +18,7 @@ Type *pointer_to(Type *base) {
   ty->kind = TY_PTR;
   ty->size = 8;
   ty->base = base;
+
   return ty;
 }
 
@@ -24,6 +26,7 @@ Type *func_type(Type *return_ty) {
   Type *ty = calloc(1, sizeof(Type));
   ty->kind = TY_FUNC;
   ty->return_ty = return_ty;
+
   return ty;
 }
 
@@ -33,6 +36,7 @@ Type *array_of(Type *base, int len) {
   ty->size = base->size * len;
   ty->base = base;
   ty->array_len = len;
+
   return ty;
 }
 
@@ -75,6 +79,7 @@ void add_type(Node *node) {
       node->ty = node->lhs->ty;
       return;
     }
+
     case ND_EQ:
     case ND_NE:
     case ND_LT:
@@ -99,6 +104,7 @@ void add_type(Node *node) {
 
       return;
     }
+    
     case ND_DEREF:
       if (!node->lhs->ty->base) {
         error_tok(node->tok, "invalid pointer dereference");

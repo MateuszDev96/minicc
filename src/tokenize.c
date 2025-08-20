@@ -49,13 +49,17 @@ bool consume(Token **rest, Token *tok, char *str) {
     *rest = tok->next;
     return true;
   }
+  
   *rest = tok;
+
   return false;
 }
 
 static int get_number(Token *tok) {
-  if (tok->kind != TK_NUM)
+  if (tok->kind != TK_NUM) {
     error_tok(tok, "expected a number");
+  }
+
   return tok->val;
 }
 
@@ -64,6 +68,7 @@ static Token *new_token(TokenKind kind, char *start, char *end) {
   tok->kind = kind;
   tok->loc = start;
   tok->len = end - start;
+
   return tok;
 }
 
@@ -81,8 +86,10 @@ static bool is_ident2(char c) {
 
 static int read_punct(char *p) {
   if (startswith(p, "==") || startswith(p, "!=") ||
-      startswith(p, "<=") || startswith(p, ">="))
+      startswith(p, "<=") || startswith(p, ">=")
+  ) {
     return 2;
+  }
 
   return ispunct(*p) ? 1 : 0;
 }
@@ -147,5 +154,6 @@ Token *tokenize(char *p) {
 
   cur = cur->next = new_token(TK_EOF, p, p);
   convert_keywords(head.next);
+
   return head.next;
 }

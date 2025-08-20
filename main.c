@@ -3,6 +3,5 @@ int hehe() {
 }
 
 int main() {
-  print(1);
   return 2 + hehe();
 }
