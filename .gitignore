@@ -3,7 +3,6 @@
 **/*.o
 **/*.s
 **/a.out
-/tmp*
 /minicc
 /build
 

@@ -21,6 +21,6 @@ test: minicc
 	./test.sh
 
 clean:
-	rm -rf $(BUILD_DIR) *~ tmp*
+	rm -rf $(BUILD_DIR) *~ ../build/tmp*
 
 .PHONY: test clean

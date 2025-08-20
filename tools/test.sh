@@ -1,5 +1,5 @@
 #!/bin/bash
-cat <<EOF | riscv64-linux-gnu-gcc -xc -c -o tmp2.o -
+cat <<EOF | riscv64-linux-gnu-gcc -xc -c -o ./build/tmp2.o -
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int x, int y) { return x + y; }
@@ -14,10 +14,10 @@ assert() {
   expected="$1"
   input="$2"
 
-  ../build/minicc "$input" > tmp.s || exit
+  ../build/minicc "$input" > ../build/tmp.s || exit
 
-  riscv64-linux-gnu-gcc -static -o tmp tmp.s tmp2.o
-  qemu-riscv64-static ./tmp
+  riscv64-linux-gnu-gcc -static -o ../public/tmp ../public/tmp.s ../public/tmp2.o
+  qemu-riscv64-static ../public/tmp
 
   actual="$?"
 
