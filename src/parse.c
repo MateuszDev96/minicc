@@ -127,6 +127,7 @@ static Type *type_suffix(Token **rest, Token *tok, Type *ty) {
     int sz = get_number(tok->next);
     tok = skip(tok->next->next, "]");
     ty = type_suffix(rest, tok, ty);
+
     return array_of(ty, sz);
   }
 
@@ -186,6 +187,7 @@ static Node *stmt(Token **rest, Token *tok) {
     Node *node = new_node(ND_RETURN, tok);
     node->lhs = expr(&tok, tok->next);
     *rest = skip(tok, ";");
+
     return node;
   }
 
@@ -234,6 +236,7 @@ static Node *stmt(Token **rest, Token *tok) {
     node->cond = expr(&tok, tok);
     tok = skip(tok, ")");
     node->then = stmt(rest, tok);
+
     return node;
   }
 
@@ -475,6 +478,7 @@ static Node *postfix(Token **rest, Token *tok) {
     tok = skip(tok, "]");
     node = new_unary(ND_DEREF, new_add(node, idx, start), start);
   }
+
   *rest = tok;
 
   return node;
@@ -508,12 +512,14 @@ static Node *primary(Token **rest, Token *tok) {
   if (equal(tok, "(")) {
     Node *node = expr(&tok, tok->next);
     *rest = skip(tok, ")");
+    
     return node;
   }
 
   if (equal(tok, "sizeof")) {
     Node *node = unary(rest, tok->next);
     add_type(node);
+
     return new_num(node->ty->size, tok);
   }
 
@@ -529,12 +535,14 @@ static Node *primary(Token **rest, Token *tok) {
     }
 
     *rest = tok->next;
+
     return new_var_node(var, tok);
   }
 
   if (tok->kind == TK_NUM) {
     Node *node = new_num(tok->val, tok);
     *rest = tok->next;
+
     return node;
   }
 

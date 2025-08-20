@@ -3,5 +3,6 @@ int hehe() {
 }
 
 int main() {
+  return 22;
   return 2 + hehe();
 }

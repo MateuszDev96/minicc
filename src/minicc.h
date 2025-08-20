@@ -126,4 +126,4 @@ Type *pointer_to(Type *base);
 Type *func_type(Type *return_ty);
 Type *array_of(Type *base, int size);
 void add_type(Node *node);
-void codegen(Function *prog);
+void codegen(Function *prog, FILE *out);

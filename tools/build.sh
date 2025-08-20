@@ -1,4 +1,4 @@
 #!/bin/bash
-cd ../src || exit 1
+cd ../src
 make clean && make
 cd ../../
