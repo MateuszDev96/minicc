@@ -187,7 +187,7 @@ static Node *stmt(Token **rest, Token *tok) {
     Node *node = new_node(ND_RETURN, tok);
     node->lhs = expr(&tok, tok->next);
     *rest = skip(tok, ";");
-
+    
     return node;
   }
 
