@@ -33,10 +33,5 @@ int main(int argc, char **argv) {
     codegen(prog);
   }
 
-  // char *source = read_file(argv[1]);
-  // Token *tok = tokenize(source);
-  // Function *prog = parse(tok);
-  // codegen(prog);
-
   return 0;
 }
