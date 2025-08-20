@@ -22,32 +22,21 @@ char *read_file(char *path) {
 }
 
 int main(int argc, char **argv) {
-  if (argc < 2 || argc > 3) {
-    error("%s: invalid number of arguments\n", argv[0]);
-  }
-
-  bool is_string_input = false;
-  char *input = NULL;
-
-  if (argc == 3 && strcmp(argv[1], "-s") == 0) {
-    is_string_input = true;
-    input = argv[2];  // kod źródłowy bezpośrednio z argumentu
-  } else if (argc == 2) {
-    input = argv[1];  // ścieżka do pliku
-  } else {
-    error("Usage: %s [-s source_code] | [file_path]\n", argv[0]);
-  }
-
-  if (is_string_input) {
-    Token *tok = tokenize(input);
+  if (argc == 2) {
+    Token *tok = tokenize(argv[1]);
     Function *prog = parse(tok);
     codegen(prog);
   } else {
-    char *source = read_file(input);
+    char *source = read_file(argv[2]);
     Token *tok = tokenize(source);
     Function *prog = parse(tok);
     codegen(prog);
   }
+
+  // char *source = read_file(argv[1]);
+  // Token *tok = tokenize(source);
+  // Function *prog = parse(tok);
+  // codegen(prog);
 
   return 0;
 }
