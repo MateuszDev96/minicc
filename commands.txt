@@ -1,0 +1,3 @@
+convert CRLF to LF
+  find . -type f -not -path "./.git/*" -exec sed -i 's/\r$//' {} +
+
