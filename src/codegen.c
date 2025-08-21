@@ -244,8 +244,9 @@ static void gen_stmt(Node *node, FILE *out) {
       return;
     }
 
-    default:
+    default: {
       break;
+    }
   }
 
   error_tok(node->tok, "invalid statement");

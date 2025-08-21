@@ -503,6 +503,9 @@ static Node *funcall(Token **rest, Token *tok) {
 
   Node *node = new_node(ND_FUNCALL, start);
   node->funcname = strndup(start->loc, start->len);
+  // char *name = calloc(1, start->len + 1);
+  // memcpy(name, start->loc, start->len);
+  // node->funcname = name;
   node->args = head.next;
 
   return node;

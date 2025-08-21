@@ -1,7 +1,5 @@
-int hehe() {
-  return 3 + 5;
+int main() {
+  print(11111111);
+  return 1;
 }
 
-int main() {
-  return 2 + hehe();
-}
