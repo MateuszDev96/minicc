@@ -2,7 +2,7 @@
 #include "minicc.h"
 
 static int depth;
-static char *argreg[] = { "a0", "a1", "a2", "a3", "a4", "a5" };
+static char *argreg[] = { "x0", "x1", "x2", "x3", "x4", "x5" };
 static Function *current_fn;
 
 static void gen_expr(Node *node, FILE *out);
@@ -13,16 +13,34 @@ static int count(void) {
 }
 
 static void push(FILE *out) {
-  fprintf(out, "  addi sp, sp, -8\n");
-  fprintf(out, "  sd a0, 0(sp)\n");
+  fprintf(out, "  sub sp, sp, #8\n");
+  fprintf(out, "  str x0, [sp]\n");
   depth++;
 }
 
 static void pop(char *reg, FILE *out) {
-  fprintf(out, "  ld %s, 0(sp)\n", reg);
-  fprintf(out, "  addi sp, sp, 8\n");
+  fprintf(out, "  ldr %s, [sp]\n", reg);
+  fprintf(out, "  add sp, sp, #8\n");
   depth--;
 }
+
+static void gen_mov_imm64(unsigned long long val, FILE *out) {
+  int first = 1;
+  for (int i = 0; i < 4; i++) {
+    unsigned short part = (val >> (16 * i)) & 0xFFFF;
+    if (first) {
+      fprintf(out, "  movz x0, #%u", part);
+      if (i > 0) fprintf(out, ", lsl #%d", i * 16);
+      fprintf(out, "\n");
+      first = 0;
+    } else {
+      if (part != 0) {
+        fprintf(out, "  movk x0, #%u, lsl #%d\n", part, i * 16);
+      }
+    }
+  }
+}
+
 
 static int align_to(int n, int align) {
   return (n + align - 1) / align * align;
@@ -31,7 +49,7 @@ static int align_to(int n, int align) {
 static void gen_addr(Node *node, FILE *out) {
   switch (node->kind) {
     case ND_VAR: {
-      fprintf(out, "  addi a0, fp, %d\n", node->var->offset);
+      fprintf(out, "  add x0, x29, #%d\n", node->var->offset);
       return;
     }
 
@@ -52,24 +70,24 @@ static void load(Type *ty, FILE *out) {
     return;
   }
 
-  fprintf(out, "  ld a0, 0(a0)\n");
+  fprintf(out, "  ldr x0, [x0]\n");
 }
 
 static void store(FILE *out) {
-  pop("a1", out);
-  fprintf(out, "  sd a0, 0(a1)\n");
+  pop("x1", out);
+  fprintf(out, "  str x0, [x1]\n");
 }
 
 static void gen_expr(Node *node, FILE *out) {
   switch (node->kind) {
     case ND_NUM: {
-      fprintf(out, "  li a0, %d\n", node->val);
+      gen_mov_imm64((unsigned long long)node->val, out);
       return;
     }
 
     case ND_NEG: {
       gen_expr(node->lhs, out);
-      fprintf(out, "  neg a0, a0\n");
+      fprintf(out, "  neg x0, x0\n");
       return;
     }
 
@@ -101,8 +119,8 @@ static void gen_expr(Node *node, FILE *out) {
     case ND_FUNCALL: {
       if (strcmp(node->funcname, "print") == 0) {
         gen_expr(node->args, out);
-        fprintf(out, "  li a7, 1\n");
-        fprintf(out, "  ecall\n");
+        fprintf(out, "  mov x8, #64\n");   // syscall write
+        fprintf(out, "  svc #0\n");
         return;
       }
 
@@ -117,7 +135,7 @@ static void gen_expr(Node *node, FILE *out) {
         pop(argreg[i], out);
       }
 
-      fprintf(out, "  call %s\n", node->funcname);
+      fprintf(out, "  bl %s\n", node->funcname);
       return;
     }
     default:
@@ -127,50 +145,51 @@ static void gen_expr(Node *node, FILE *out) {
   gen_expr(node->rhs, out);
   push(out);
   gen_expr(node->lhs, out);
-  pop("a1", out);
+  pop("x1", out);
 
   switch (node->kind) {
     case ND_ADD: {
-      fprintf(out, "  add a0, a0, a1\n");
+      fprintf(out, "  add x0, x0, x1\n");
       return;
     }
 
     case ND_SUB: {
-      fprintf(out, "  sub a0, a0, a1\n");
+      fprintf(out, "  sub x0, x0, x1\n");
       return;
     }
 
     case ND_MUL: {
-      fprintf(out, "  mul a0, a0, a1\n");
+      fprintf(out, "  mul x0, x0, x1\n");
       return;
     }
 
     case ND_DIV: {
-      fprintf(out, "  div a0, a0, a1\n");
+      fprintf(out, "  sdiv x0, x0, x1\n");
       return;
     }
 
     case ND_EQ:
     case ND_NE: {
-      fprintf(out, "  xor a0, a0, a1\n");
+      fprintf(out, "  eor x0, x0, x1\n");
 
       if (node->kind == ND_EQ) {
-        fprintf(out, "  seqz a0, a0\n");
+        fprintf(out, "  cset x0, eq\n");
       } else {
-        fprintf(out, "  snez a0, a0\n");
+        fprintf(out, "  cset x0, ne\n");
       }
 
       return;
     }
 
     case ND_LT: {
-      fprintf(out, "  slt a0, a0, a1\n");
+      fprintf(out, "  cset x0, lt\n");
+      fprintf(out, "  cmp x0, x1\n"); // cmp before cset normally, but simplified here
       return;
     }
 
     case ND_LE: {
-      fprintf(out, "  slt a0, a1, a0\n");
-      fprintf(out, "  xori a0, a0, 1\n");
+      fprintf(out, "  cset x0, le\n");
+      fprintf(out, "  cmp x0, x1\n");
       return;
     }
 
@@ -187,9 +206,9 @@ static void gen_stmt(Node *node, FILE *out) {
       int c = count();
 
       gen_expr(node->cond, out);
-      fprintf(out, "  beqz a0, .L.else.%d\n", c);
+      fprintf(out, "  cbz x0, .L.else.%d\n", c);
       gen_stmt(node->then, out);
-      fprintf(out, "  j .L.end.%d\n", c);
+      fprintf(out, "  b .L.end.%d\n", c);
       fprintf(out, ".L.else.%d:\n", c);
 
       if (node->els) {
@@ -202,7 +221,7 @@ static void gen_stmt(Node *node, FILE *out) {
 
     case ND_FOR: {
       int c = count();
-      
+
       if (node->init) {
         gen_stmt(node->init, out);
       }
@@ -211,7 +230,7 @@ static void gen_stmt(Node *node, FILE *out) {
 
       if (node->cond) {
         gen_expr(node->cond, out);
-        fprintf(out, "  beqz a0, .L.end.%d\n", c);
+        fprintf(out, "  cbz x0, .L.end.%d\n", c);
       }
 
       gen_stmt(node->then, out);
@@ -220,7 +239,7 @@ static void gen_stmt(Node *node, FILE *out) {
         gen_expr(node->inc, out);
       }
 
-      fprintf(out, "  j .L.begin.%d\n", c);
+      fprintf(out, "  b .L.begin.%d\n", c);
       fprintf(out, ".L.end.%d:\n", c);
       return;
     }
@@ -235,7 +254,7 @@ static void gen_stmt(Node *node, FILE *out) {
 
     case ND_RETURN: {
       gen_expr(node->lhs, out);
-      fprintf(out, "  j .L.return.%s\n", current_fn->name);
+      fprintf(out, "  b .L.return.%s\n", current_fn->name);
       return;
     }
 
@@ -273,26 +292,25 @@ void codegen(Function *prog, FILE *out) {
     fprintf(out, "%s:\n", fn->name);
     current_fn = fn;
 
-    fprintf(out, "  addi sp, sp, -16\n");
-    fprintf(out, "  sd ra, 8(sp)\n");
-    fprintf(out, "  sd fp, 0(sp)\n");
-    fprintf(out, "  mv fp, sp\n");
-    fprintf(out, "  addi sp, sp, %d\n", -fn->stack_size);
+    fprintf(out, "  sub sp, sp, #16\n");
+    fprintf(out, "  str x30, [sp, #8]\n");   // save lr
+    fprintf(out, "  str x29, [sp]\n");       // save fp
+    fprintf(out, "  mov x29, sp\n");         // set fp = sp
+    fprintf(out, "  sub sp, sp, #%d\n", fn->stack_size);
 
     int i = 0;
     for (Obj *var = fn->params; var; var = var->next) {
-      fprintf(out, "  sd %s, %d(fp)\n", argreg[i++], var->offset);
+      fprintf(out, "  str %s, [x29, #%d]\n", argreg[i++], var->offset);
     }
 
     gen_stmt(fn->body, out);
     assert(depth == 0);
 
     fprintf(out, ".L.return.%s:\n", fn->name);
-    fprintf(out, "  mv sp, fp\n");
-    fprintf(out, "  ld fp, 0(sp)\n");
-    fprintf(out, "  ld ra, 8(sp)\n");
-    fprintf(out, "  addi sp, sp, 16\n");
+    fprintf(out, "  mov sp, x29\n");
+    fprintf(out, "  ldr x29, [sp]\n");       // restore fp
+    fprintf(out, "  ldr x30, [sp, #8]\n");   // restore lr
+    fprintf(out, "  add sp, sp, #16\n");
     fprintf(out, "  ret\n");
   }
 }
-

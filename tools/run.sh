@@ -1,6 +1,6 @@
 ./build.sh
 ../build/minicc -c ../main.c
-riscv64-linux-gnu-gcc -static -o ../main ../main.s
-qemu-riscv64 ../main
+aarch64-linux-gnu-gcc -static -o ../main ../main.s
+qemu-aarch64 ../main
 
-# echo -e "\n Exit code: $?"
+echo -e "\n Exit code: $?"

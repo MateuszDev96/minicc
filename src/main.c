@@ -142,10 +142,10 @@ int main(int argc, char **argv) {
     Token *tok = tokenize(source);
     Function *prog = parse(tok);
 
-    for (Function *fn = prog; fn; fn = fn->next) {
-      printf("Function: %s\n", fn->name);
-      print_ast(fn->body, 1);
-    }
+    // for (Function *fn = prog; fn; fn = fn->next) {
+    //   printf("Function: %s\n", fn->name);
+    //   print_ast(fn->body, 1);
+    // }
     codegen(prog, out);
   }
 
