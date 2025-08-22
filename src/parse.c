@@ -523,6 +523,13 @@ static Node *primary(Token **rest, Token *tok) {
     return new_num(node->ty->size, tok);
   }
 
+  if (tok->kind == TK_STRING) {
+    Node *node = new_node(ND_STRING, tok);
+    node->str = strndup(tok->loc, tok->len);
+    tok = tok->next;
+    return node;
+  }
+
   if (tok->kind == TK_IDENT) {
     if (equal(tok->next, "(")) {
       return funcall(rest, tok);

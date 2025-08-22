@@ -125,13 +125,23 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    if (*p == '"') {
+      char *start = ++p;
+      while (*p && *p != '"') p++;
+      if (*p != '"') error_at(start, "unclosed string literal");
+      cur = cur->next = new_token(TK_STRING, start, p);
+      cur->str = strndup(start, p - start);
+      p++;
+      continue;
+    }
+
     if (startswith(p, "//")) {
       p += 2;
 
       while (*p && *p != '\n') {
         p++;
       }
-      
+
       continue;
     }
 
@@ -153,6 +163,7 @@ Token *tokenize(char *p) {
     }
 
     int punct_len = read_punct(p);
+
     if (punct_len) {
       cur = cur->next = new_token(TK_PUNCT, p, p + punct_len);
       p += punct_len;

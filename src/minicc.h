@@ -13,6 +13,7 @@ typedef struct Node Node;
 
 typedef enum {
   TK_IDENT,
+  TK_STRING,
   TK_PUNCT,
   TK_KEYWORD,
   TK_NUM,
@@ -24,6 +25,7 @@ struct Token {
   TokenKind kind;
   Token *next;
   int val;
+  char *str; 
   char *loc;
   int len;
 };
@@ -76,6 +78,7 @@ typedef enum {
   ND_EXPR_STMT, // Expression statement
   ND_VAR,       // Variable
   ND_NUM,       // Integer
+  ND_STRING,    // String
 } NodeKind;
 
 typedef struct Node Node;
@@ -92,6 +95,7 @@ struct Node {
   Node *init;
   Node *inc;
   Node *body;
+  char *str;
   char *funcname;
   Node *args;
   Obj *var;

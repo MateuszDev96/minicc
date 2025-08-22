@@ -28,6 +28,7 @@ static void gen_mov_imm64(unsigned long long val, FILE *out) {
   int first = 1;
   for (int i = 0; i < 4; i++) {
     unsigned short part = (val >> (16 * i)) & 0xFFFF;
+
     if (first) {
       fprintf(out, "  movz x0, #%u", part);
       if (i > 0) fprintf(out, ", lsl #%d", i * 16);
@@ -113,56 +114,81 @@ static void gen_expr(Node *node, FILE *out) {
       push(out);
       gen_expr(node->rhs, out);
       store(out);
+
+      return;
+    }
+
+    case ND_STRING: {
+      int label = count();
+      fprintf(out, ".L.str.%d:\n", label);
+      fprintf(out, "  .asciz \"%s\"\n", node->str);
+
+      fprintf(out, "  adrp x0, .L.str.%d\n", label);
+      fprintf(out, "  add x0, x0, #:lo12:.L.str.%d\n", label);
+
       return;
     }
 
     case ND_FUNCALL: {
-      if (strcmp(node->funcname, "print") == 0) {
-        int c = count();
-
-        gen_expr(node->args, out);
-
-        fprintf(out, "  sub sp, sp, #20\n");
-        fprintf(out, "  mov x1, sp\n");
-
+      Node *arg = node->args;
+      
+      if (strcmp(node->funcname, "print") == 0 && arg->kind == ND_STRING) {
+        gen_expr(arg, out);
+        int len = strlen(arg->str);
         fprintf(out,
-          "  mov x2, x1\n"
-          "  add x2, x2, #19\n"
-          "  mov x3, #0\n"
-          "  mov x4, x0\n"
-
-          ".L.print_loop.%d:\n"
-          "  mov x5, #10\n"
-          "  udiv x6, x4, x5\n"
-          "  msub x7, x6, x5, x4\n"
-          "  add x7, x7, #'0'\n"
-          "  strb w7, [x2]\n"
-          "  sub x2, x2, #1\n"
-          "  mov x4, x6\n"
-          "  add x3, x3, #1\n"
-          "  cbnz x4, .L.print_loop.%d\n"
-
-          "  cbnz x3, .L.print_skip_zero.%d\n"
-          "  mov w7, #'0'\n"
-          "  strb w7, [x2]\n"
-          "  sub x2, x2, #1\n"
-          "  mov x3, #1\n"
-          ".L.print_skip_zero.%d:\n"
-
-          "  add x2, x2, #1\n"
+          "  mov x1, x0\n"
+          "  mov x2, #%d\n"
           "  mov x0, #1\n"
-          "  mov x1, x2\n"
-          "  mov x2, x3\n"
           "  mov x8, #64\n"
-          "  svc #0\n"
-
-          "  add sp, sp, #20\n",
-
-          c, c, c, c  // <- używamy count() dla unikalnych etykiet
-        );
-
+          "  svc #0\n", len);
         return;
       }
+      // if (strcmp(node->funcname, "print") == 0) {
+      //   int c = count();
+
+      //   gen_expr(node->args, out);
+
+      //   fprintf(out, "  sub sp, sp, #20\n");
+      //   fprintf(out, "  mov x1, sp\n");
+
+      //   fprintf(out,
+      //     "  mov x2, x1\n"
+      //     "  add x2, x2, #19\n"
+      //     "  mov x3, #0\n"
+      //     "  mov x4, x0\n"
+
+      //     ".L.print_loop.%d:\n"
+      //     "  mov x5, #10\n"
+      //     "  udiv x6, x4, x5\n"
+      //     "  msub x7, x6, x5, x4\n"
+      //     "  add x7, x7, #'0'\n"
+      //     "  strb w7, [x2]\n"
+      //     "  sub x2, x2, #1\n"
+      //     "  mov x4, x6\n"
+      //     "  add x3, x3, #1\n"
+      //     "  cbnz x4, .L.print_loop.%d\n"
+
+      //     "  cbnz x3, .L.print_skip_zero.%d\n"
+      //     "  mov w7, #'0'\n"
+      //     "  strb w7, [x2]\n"
+      //     "  sub x2, x2, #1\n"
+      //     "  mov x3, #1\n"
+      //     ".L.print_skip_zero.%d:\n"
+
+      //     "  add x2, x2, #1\n"
+      //     "  mov x0, #1\n"
+      //     "  mov x1, x2\n"
+      //     "  mov x2, x3\n"
+      //     "  mov x8, #64\n"
+      //     "  svc #0\n"
+
+      //     "  add sp, sp, #20\n",
+
+      //     c, c, c, c  // <- używamy count() dla unikalnych etykiet
+      //   );
+
+      //   return;
+      // }
 
       int nargs = 0;
       for (Node *arg = node->args; arg; arg = arg->next) {
