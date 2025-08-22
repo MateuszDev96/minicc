@@ -118,9 +118,57 @@ static void gen_expr(Node *node, FILE *out) {
 
     case ND_FUNCALL: {
       if (strcmp(node->funcname, "print") == 0) {
+        // Zakładamy, że print ma jeden argument: liczba w node->args
+
+        // Wygeneruj kod do obliczenia tej liczby, wynik w x0
         gen_expr(node->args, out);
-        fprintf(out, "  mov x8, #64\n");   // syscall write
-        fprintf(out, "  svc #0\n");
+
+        // Zarezerwuj bufor 20 bajtów na stosie
+        fprintf(out, "  sub sp, sp, #20\n");
+        fprintf(out, "  mov x1, sp\n");  // x1 = wskaźnik do bufora
+
+        // Konwersja liczby w x0 na tekst ASCII w buforze w x1
+        // Implementacja prostej pętli dzielenia przez 10, zapisywania cyfr od końca bufora
+
+        fprintf(out,
+          "  mov x2, x1\n"           // x2 - wskaźnik do aktualnej pozycji w buforze
+          "  add x2, x2, #19\n"      // ustaw x2 na koniec bufora
+          "  mov x3, #0\n"           // licznik cyfr (ilość wypisanych)
+
+          "  mov x4, x0\n"           // x4 = liczba do konwersji\n"
+
+          ".L.print_loop:\n"
+          "  mov x5, #10\n"
+          "  udiv x6, x4, x5\n"       // x6 = x4 / 10
+          "  msub x7, x6, x5, x4\n"   // x7 = x4 - x6*10 (modulo)
+          "  add x7, x7, #'0'\n"      // zamiana cyfry na znak ASCII
+          "  strb w7, [x2]\n"         // zapisz znak do bufora
+          "  sub x2, x2, #1\n"        // przesun wskaźnik w lewo
+          "  mov x4, x6\n"            // x4 = x6 (liczba podzielona przez 10)
+          "  add x3, x3, #1\n"        // zwiększ licznik cyfr
+          "  cbnz x4, .L.print_loop\n"
+
+          // Obsługa 0 (gdy liczba była 0)
+          "  cbnz x3, .L.print_skip_zero\n"
+          "  mov w7, #'0'\n"
+          "  strb w7, [x2]\n"
+          "  sub x2, x2, #1\n"
+          "  mov x3, #1\n"
+          ".L.print_skip_zero:\n"
+
+          "  add x2, x2, #1\n"        // x2 teraz wskazuje na pierwszy znak do wypisania
+
+          // syscall write(fd=1, buf=x2, count=x3)
+          "  mov x0, #1\n"            // stdout
+          "  mov x1, x2\n"            // wskaźnik do bufora (początek liczby)
+          "  mov x2, x3\n"            // długość stringa
+          "  mov x8, #64\n"           // syscall write
+          "  svc #0\n"
+
+          // zwolnij bufor
+          "  add sp, sp, #20\n"
+        );
+
         return;
       }
 

@@ -1,5 +1,5 @@
 int main() {
-  print(11111111);
-  return 123;
+  print(12333);
+  return 1;
 }
 
