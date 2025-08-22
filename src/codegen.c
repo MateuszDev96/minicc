@@ -7,8 +7,8 @@ static Function *current_fn;
 
 static void gen_expr(Node *node, FILE *out);
 
-static int count(void) {
-  static int i = 1;
+static unsigned long long count(void) {
+  static unsigned long long i = 1;
   return i++;
 }
 
@@ -118,7 +118,7 @@ static void gen_expr(Node *node, FILE *out) {
 
     case ND_FUNCALL: {
       if (strcmp(node->funcname, "print") == 0) {
-        int c = count();  // unikalny licznik etykiet
+        int c = count();
 
         gen_expr(node->args, out);
 
