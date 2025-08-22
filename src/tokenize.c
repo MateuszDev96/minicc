@@ -125,6 +125,16 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    if (startswith(p, "//")) {
+      p += 2;
+
+      while (*p && *p != '\n') {
+        p++;
+      }
+      
+      continue;
+    }
+
     if (isdigit(*p)) {
       cur = cur->next = new_token(TK_NUM, p, p);
       char *q = p;
