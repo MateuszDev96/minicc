@@ -1,5 +1,5 @@
 #!/bin/bash
-cat <<EOF | aarch64-linux-gnu-gcc -xc -c -o ./build/tmp2.o -
+cat <<EOF | riscv64-linux-gnu-gcc -xc -c -o ./build/tmp2.o -
 int ret3() { return 3; }
 int ret5() { return 5; }
 int add(int x, int y) { return x + y; }
@@ -16,8 +16,8 @@ assert() {
 
   ../build/minicc "$input" > ../build/tmp.s || exit
 
-  aarch64-linux-gnu-gcc -static -o ../public/tmp ../public/tmp.s ../public/tmp2.o
-  qemu-aarch64-static ../public/tmp
+  riscv64-linux-gnu-gcc -static -o ../public/tmp ../public/tmp.s ../public/tmp2.o
+  qemu-riscv64-static ../public/tmp
 
   actual="$?"
 

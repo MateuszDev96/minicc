@@ -1,8 +1,6 @@
 int main() {
-  print(1111);
-  print(2222);
-  print(3333);
-  print("asdasd");
-  return 1;
+  // print("1111");
+  
+  return 123;
 }
 

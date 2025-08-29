@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <string.h>
+#include <assert.h>
 #include "minicc.h"
 
 static int depth;
-static char *argreg[] = { "x0", "x1", "x2", "x3", "x4", "x5" };
+static char *argreg[] = { "a0", "a1", "a2", "a3", "a4", "a5" };
 static Function *current_fn;
 
 static void gen_expr(Node *node, FILE *out);
@@ -13,35 +15,20 @@ static unsigned long long count(void) {
 }
 
 static void push(FILE *out) {
-  fprintf(out, "  sub sp, sp, #8\n");
-  fprintf(out, "  str x0, [sp]\n");
+  fprintf(out, "  addi sp, sp, -8\n");
+  fprintf(out, "  sd a0, 0(sp)\n");
   depth++;
 }
 
 static void pop(char *reg, FILE *out) {
-  fprintf(out, "  ldr %s, [sp]\n", reg);
-  fprintf(out, "  add sp, sp, #8\n");
+  fprintf(out, "  ld %s, 0(sp)\n", reg);
+  fprintf(out, "  addi sp, sp, 8\n");
   depth--;
 }
 
 static void gen_mov_imm64(unsigned long long val, FILE *out) {
-  int first = 1;
-  for (int i = 0; i < 4; i++) {
-    unsigned short part = (val >> (16 * i)) & 0xFFFF;
-
-    if (first) {
-      fprintf(out, "  movz x0, #%u", part);
-      if (i > 0) fprintf(out, ", lsl #%d", i * 16);
-      fprintf(out, "\n");
-      first = 0;
-    } else {
-      if (part != 0) {
-        fprintf(out, "  movk x0, #%u, lsl #%d\n", part, i * 16);
-      }
-    }
-  }
+  fprintf(out, "  li a0, %llu\n", val);
 }
-
 
 static int align_to(int n, int align) {
   return (n + align - 1) / align * align;
@@ -49,161 +36,120 @@ static int align_to(int n, int align) {
 
 static void gen_addr(Node *node, FILE *out) {
   switch (node->kind) {
-    case ND_VAR: {
-      fprintf(out, "  add x0, x29, #%d\n", node->var->offset);
+    case ND_VAR:
+      fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
       return;
-    }
-
-    case ND_DEREF: {
+    case ND_DEREF:
       gen_expr(node->lhs, out);
       return;
-    }
-
     default:
       break;
   }
-
   error_tok(node->tok, "not an lvalue");
 }
 
 static void load(Type *ty, FILE *out) {
-  if (ty->kind == TY_ARRAY) {
+  if (ty->kind == TY_ARRAY)
     return;
-  }
-
-  fprintf(out, "  ldr x0, [x0]\n");
+  fprintf(out, "  ld a0, 0(a0)\n");
 }
 
 static void store(FILE *out) {
-  pop("x1", out);
-  fprintf(out, "  str x0, [x1]\n");
+  pop("a1", out);
+  fprintf(out, "  sd a0, 0(a1)\n");
 }
 
 static void gen_expr(Node *node, FILE *out) {
   switch (node->kind) {
-    case ND_NUM: {
+    case ND_NUM:
       gen_mov_imm64((unsigned long long)node->val, out);
       return;
-    }
 
-    case ND_NEG: {
+    case ND_NEG:
       gen_expr(node->lhs, out);
-      fprintf(out, "  neg x0, x0\n");
+      fprintf(out, "  neg a0, a0\n");
       return;
-    }
 
-    case ND_VAR: {
+    case ND_VAR:
       gen_addr(node, out);
       load(node->ty, out);
       return;
-    }
 
-    case ND_DEREF: {
+    case ND_DEREF:
       gen_expr(node->lhs, out);
       load(node->ty, out);
       return;
-    }
 
-    case ND_ADDR: {
+    case ND_ADDR:
       gen_addr(node->lhs, out);
       return;
-    }
 
-    case ND_ASSIGN: {
+    case ND_ASSIGN:
       gen_addr(node->lhs, out);
       push(out);
       gen_expr(node->rhs, out);
       store(out);
-
       return;
-    }
 
     case ND_STRING: {
       int label = count();
       fprintf(out, ".L.str.%d:\n", label);
       fprintf(out, "  .asciz \"%s\"\n", node->str);
-
-      fprintf(out, "  adrp x0, .L.str.%d\n", label);
-      fprintf(out, "  add x0, x0, #:lo12:.L.str.%d\n", label);
-
+      fprintf(out, "  la a0, .L.str.%d\n", label);
       return;
     }
 
     case ND_FUNCALL: {
       Node *arg = node->args;
-      
-      if (strcmp(node->funcname, "print") == 0 && arg->kind == ND_STRING) {
-        gen_expr(arg, out);
-        int len = strlen(arg->str);
-        fprintf(out,
-          "  mov x1, x0\n"
-          "  mov x2, #%d\n"
-          "  mov x0, #1\n"
-          "  mov x8, #64\n"
-          "  svc #0\n", len);
-        return;
+
+      if (strcmp(node->funcname, "print") == 0) {
+        if (arg->kind == ND_STRING) {
+          gen_expr(arg, out);
+          int len = strlen(arg->str);
+          fprintf(out,
+            "  mv a1, a0\n"
+            "  li a2, %d\n"
+            "  li a0, 1\n"
+            "  li a7, 64\n"
+            "  ecall\n", len);
+          return;
+        } else if (arg->kind == ND_NUM) {
+          // Tu możesz zamiast syscall wywołać print_num (musisz ją napisać)
+          // lub generować call print (wymaga definicji print).
+          gen_expr(arg, out);       // załaduj wartość liczby w a0
+          fprintf(out, "  call print_num\n"); // zakładamy istnienie print_num
+          return;
+        } else {
+          // domyślnie generujemy call print
+          // generuj argumenty normalnie:
+          int nargs = 0;
+          for (Node *arg2 = node->args; arg2; arg2 = arg2->next) {
+            gen_expr(arg2, out);
+            push(out);
+            nargs++;
+          }
+          for (int i = nargs - 1; i >= 0; i--) {
+            pop(argreg[i], out);
+          }
+          fprintf(out, "  call %s\n", node->funcname);
+          return;
+        }
       }
-      // if (strcmp(node->funcname, "print") == 0) {
-      //   int c = count();
 
-      //   gen_expr(node->args, out);
-
-      //   fprintf(out, "  sub sp, sp, #20\n");
-      //   fprintf(out, "  mov x1, sp\n");
-
-      //   fprintf(out,
-      //     "  mov x2, x1\n"
-      //     "  add x2, x2, #19\n"
-      //     "  mov x3, #0\n"
-      //     "  mov x4, x0\n"
-
-      //     ".L.print_loop.%d:\n"
-      //     "  mov x5, #10\n"
-      //     "  udiv x6, x4, x5\n"
-      //     "  msub x7, x6, x5, x4\n"
-      //     "  add x7, x7, #'0'\n"
-      //     "  strb w7, [x2]\n"
-      //     "  sub x2, x2, #1\n"
-      //     "  mov x4, x6\n"
-      //     "  add x3, x3, #1\n"
-      //     "  cbnz x4, .L.print_loop.%d\n"
-
-      //     "  cbnz x3, .L.print_skip_zero.%d\n"
-      //     "  mov w7, #'0'\n"
-      //     "  strb w7, [x2]\n"
-      //     "  sub x2, x2, #1\n"
-      //     "  mov x3, #1\n"
-      //     ".L.print_skip_zero.%d:\n"
-
-      //     "  add x2, x2, #1\n"
-      //     "  mov x0, #1\n"
-      //     "  mov x1, x2\n"
-      //     "  mov x2, x3\n"
-      //     "  mov x8, #64\n"
-      //     "  svc #0\n"
-
-      //     "  add sp, sp, #20\n",
-
-      //     c, c, c, c  // <- używamy count() dla unikalnych etykiet
-      //   );
-
-      //   return;
-      // }
-
+      // Inne funkcje
       int nargs = 0;
-      for (Node *arg = node->args; arg; arg = arg->next) {
-        gen_expr(arg, out);
+      for (Node *arg2 = node->args; arg2; arg2 = arg2->next) {
+        gen_expr(arg2, out);
         push(out);
         nargs++;
       }
-
       for (int i = nargs - 1; i >= 0; i--) {
         pop(argreg[i], out);
       }
-
-      fprintf(out, "  bl %s\n", node->funcname);
+      fprintf(out, "  call %s\n", node->funcname);
       return;
     }
+
     default:
       break;
   }
@@ -211,53 +157,43 @@ static void gen_expr(Node *node, FILE *out) {
   gen_expr(node->rhs, out);
   push(out);
   gen_expr(node->lhs, out);
-  pop("x1", out);
+  pop("a1", out);
 
   switch (node->kind) {
-    case ND_ADD: {
-      fprintf(out, "  add x0, x0, x1\n");
+    case ND_ADD:
+      fprintf(out, "  add a0, a0, a1\n");
       return;
-    }
 
-    case ND_SUB: {
-      fprintf(out, "  sub x0, x0, x1\n");
+    case ND_SUB:
+      fprintf(out, "  sub a0, a0, a1\n");
       return;
-    }
 
-    case ND_MUL: {
-      fprintf(out, "  mul x0, x0, x1\n");
+    case ND_MUL:
+      fprintf(out, "  mul a0, a0, a1\n");
       return;
-    }
 
-    case ND_DIV: {
-      fprintf(out, "  sdiv x0, x0, x1\n");
+    case ND_DIV:
+      fprintf(out, "  div a0, a0, a1\n");
       return;
-    }
 
     case ND_EQ:
-    case ND_NE: {
-      fprintf(out, "  eor x0, x0, x1\n");
-
-      if (node->kind == ND_EQ) {
-        fprintf(out, "  cset x0, eq\n");
-      } else {
-        fprintf(out, "  cset x0, ne\n");
-      }
-
+      fprintf(out, "  sub t0, a0, a1\n");
+      fprintf(out, "  seqz a0, t0\n");
       return;
-    }
 
-    case ND_LT: {
-      fprintf(out, "  cset x0, lt\n");
-      fprintf(out, "  cmp x0, x1\n"); // cmp before cset normally, but simplified here
+    case ND_NE:
+      fprintf(out, "  sub t0, a0, a1\n");
+      fprintf(out, "  snez a0, t0\n");
       return;
-    }
 
-    case ND_LE: {
-      fprintf(out, "  cset x0, le\n");
-      fprintf(out, "  cmp x0, x1\n");
+    case ND_LT:
+      fprintf(out, "  slt a0, a0, a1\n");
       return;
-    }
+
+    case ND_LE:
+      fprintf(out, "  slt a0, a1, a0\n");
+      fprintf(out, "  xori a0, a0, 1\n");
+      return;
 
     default:
       break;
@@ -270,68 +206,50 @@ static void gen_stmt(Node *node, FILE *out) {
   switch (node->kind) {
     case ND_IF: {
       int c = count();
-
       gen_expr(node->cond, out);
-      fprintf(out, "  cbz x0, .L.else.%d\n", c);
+      fprintf(out, "  beqz a0, .L.else.%d\n", c);
       gen_stmt(node->then, out);
-      fprintf(out, "  b .L.end.%d\n", c);
+      fprintf(out, "  j .L.end.%d\n", c);
       fprintf(out, ".L.else.%d:\n", c);
-
-      if (node->els) {
+      if (node->els)
         gen_stmt(node->els, out);
-      }
-
       fprintf(out, ".L.end.%d:\n", c);
       return;
     }
 
     case ND_FOR: {
       int c = count();
-
-      if (node->init) {
+      if (node->init)
         gen_stmt(node->init, out);
-      }
-
       fprintf(out, ".L.begin.%d:\n", c);
-
       if (node->cond) {
         gen_expr(node->cond, out);
-        fprintf(out, "  cbz x0, .L.end.%d\n", c);
+        fprintf(out, "  beqz a0, .L.end.%d\n", c);
       }
-
       gen_stmt(node->then, out);
-
-      if (node->inc) {
+      if (node->inc)
         gen_expr(node->inc, out);
-      }
-
-      fprintf(out, "  b .L.begin.%d\n", c);
+      fprintf(out, "  j .L.begin.%d\n", c);
       fprintf(out, ".L.end.%d:\n", c);
       return;
     }
 
-    case ND_BLOCK: {
-      for (Node *n = node->body; n; n = n->next) {
+    case ND_BLOCK:
+      for (Node *n = node->body; n; n = n->next)
         gen_stmt(n, out);
-      }
-
       return;
-    }
 
-    case ND_RETURN: {
+    case ND_RETURN:
       gen_expr(node->lhs, out);
-      fprintf(out, "  b .L.return.%s\n", current_fn->name);
+      fprintf(out, "  j .L.return.%s\n", current_fn->name);
       return;
-    }
 
-    case ND_EXPR_STMT: {
+    case ND_EXPR_STMT:
       gen_expr(node->lhs, out);
       return;
-    }
 
-    default: {
+    default:
       break;
-    }
   }
 
   error_tok(node->tok, "invalid statement");
@@ -340,12 +258,10 @@ static void gen_stmt(Node *node, FILE *out) {
 static void assign_lvar_offsets(Function *prog) {
   for (Function *fn = prog; fn; fn = fn->next) {
     int offset = 0;
-
     for (Obj *var = fn->locals; var; var = var->next) {
       offset += var->ty->size;
       var->offset = -offset;
     }
-
     fn->stack_size = align_to(offset, 16);
   }
 }
@@ -358,25 +274,25 @@ void codegen(Function *prog, FILE *out) {
     fprintf(out, "%s:\n", fn->name);
     current_fn = fn;
 
-    fprintf(out, "  sub sp, sp, #16\n");
-    fprintf(out, "  str x30, [sp, #8]\n");   // save lr
-    fprintf(out, "  str x29, [sp]\n");       // save fp
-    fprintf(out, "  mov x29, sp\n");         // set fp = sp
-    fprintf(out, "  sub sp, sp, #%d\n", fn->stack_size);
+    fprintf(out, "  addi sp, sp, -16\n");
+    fprintf(out, "  sd ra, 8(sp)\n");
+    fprintf(out, "  sd s0, 0(sp)\n");
+    fprintf(out, "  mv s0, sp\n");
+    fprintf(out, "  addi sp, sp, -%d\n", fn->stack_size);
 
     int i = 0;
     for (Obj *var = fn->params; var; var = var->next) {
-      fprintf(out, "  str %s, [x29, #%d]\n", argreg[i++], var->offset);
+      fprintf(out, "  sd %s, %d(s0)\n", argreg[i++], var->offset);
     }
 
     gen_stmt(fn->body, out);
     assert(depth == 0);
 
     fprintf(out, ".L.return.%s:\n", fn->name);
-    fprintf(out, "  mov sp, x29\n");
-    fprintf(out, "  ldr x29, [sp]\n");       // restore fp
-    fprintf(out, "  ldr x30, [sp, #8]\n");   // restore lr
-    fprintf(out, "  add sp, sp, #16\n");
+    fprintf(out, "  mv sp, s0\n");
+    fprintf(out, "  ld s0, 0(sp)\n");
+    fprintf(out, "  ld ra, 8(sp)\n");
+    fprintf(out, "  addi sp, sp, 16\n");
     fprintf(out, "  ret\n");
   }
 }
