@@ -1,2 +1,23 @@
 #!/bin/bash
-./program1/run.sh
+./build/minicc ./tests/program1/program1.cwe ./tests/program1/program1.s
+riscv64-linux-gnu-gcc -static -o ./tests/program1/program1.exec ./tests/program1/program1.s
+qemu-riscv64 ./tests/program1/program1.exec
+
+if [ $? = 0 ]; then
+  echo "OK program1"
+else
+  echo "FAIL $0"
+  exit 1
+fi
+
+./build/minicc ./tests/program2/program2.cwe ./tests/program2/program2.s
+riscv64-linux-gnu-gcc -static -o ./tests/program2/program2.exec ./tests/program2/program2.s
+qemu-riscv64 ./tests/program2/program2.exec
+
+if [ $? = 42 ]; then
+  echo "OK program2"
+else
+  echo "FAIL $0"
+  exit 1
+fi
+
