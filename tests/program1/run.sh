@@ -3,4 +3,9 @@
 riscv64-linux-gnu-gcc -static -o ./tests/program1/program1 ./tests/program1/program1.s
 qemu-riscv64 ./tests/program1/program1
 
-echo -e "\n Exit code: $?"
+if [ $? = 0 ]; then
+  echo "OK $0"
+else
+  echo "FAIL $0"
+  exit 1
+fi
