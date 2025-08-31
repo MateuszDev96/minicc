@@ -1,4 +1,1 @@
-int main() {
-  print(121);
-  return 12;
-}
+int main() { return 12; }

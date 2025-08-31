@@ -58,9 +58,7 @@ main:
   sd s0, 0(sp)
   mv s0, sp
   addi sp, sp, -0
-  li a0, 121
-  call print_num
-  li a0, 12
+  li a0, 111
   j .L.return.main
 .L.return.main:
   mv sp, s0
