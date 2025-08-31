@@ -1,6 +1,5 @@
 int main() {
-  // print("1111");
-  
+  print(121);
   return 123;
 }
 
