@@ -1,8 +1,8 @@
 **/*~
 **/\#*
+**/*.bin
 **/*.o
 **/*.s
-**/*.bin
 **/a.out
 /minicc
 /build
