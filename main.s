@@ -57,8 +57,79 @@ main:
   sd ra, 8(sp)
   sd s0, 0(sp)
   mv s0, sp
-  addi sp, sp, -0
+  addi sp, sp, -16
+  li a0, 121
+  call print_num
+  li a0, 122
+  call print_num
+  li a0, 123
+  call print_num
+  addi a0, s0, -16
+  addi sp, sp, -8
+  sd a0, 0(sp)
   li a0, 0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  addi a0, s0, -8
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  addi a0, s0, -16
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+.L.begin.1:
+  li a0, 11
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -16
+  ld a0, 0(a0)
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  slt a0, a1, a0
+  xori a0, a0, 1
+  beqz a0, .L.end.1
+  li a0, 1
+  call print_num
+  addi a0, s0, -8
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -8
+  ld a0, 0(a0)
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -16
+  ld a0, 0(a0)
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  addi a0, s0, -16
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -16
+  ld a0, 0(a0)
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  j .L.begin.1
+.L.end.1:
+  li a0, 111
   j .L.return.main
 .L.return.main:
   mv sp, s0
