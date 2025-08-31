@@ -16,8 +16,8 @@ assert() {
 
   ../build/minicc "$input" > ../build/tmp.s || exit
 
-  riscv64-linux-gnu-gcc -static -o ../public/tmp ../public/tmp.s ../public/tmp2.o
-  qemu-riscv64-static ../public/tmp
+  riscv64-linux-gnu-gcc -static -o ../build/tmp ../build/tmp.s ../build/tmp2.o
+  qemu-riscv64-static ../build/tmp
 
   actual="$?"
 
