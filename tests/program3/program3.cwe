@@ -1,0 +1,3 @@
+int main() {
+  return 81 + 42 - 9;
+}
