@@ -3,7 +3,7 @@
 # input="int main() {return 0;}"
 
 # ./build/minicc "$input" > ./build/tmp.s || exit
-./build.sh
+./tools/build.sh
 ./build/minicc -c ./tests/program1.cwe
 riscv64-linux-gnu-gcc -static -o ./tests/program1 ./tests/program1.s
 # riscv64-linux-gnu-gcc -static -o ./build ./main.s
