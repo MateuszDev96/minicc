@@ -1,5 +1,6 @@
+#!/bin/bash
 ./tools/build.sh
-./build/minicc -c ./main.cwe
+./build/minicc -f ./main.cwe ./main.s
 riscv64-linux-gnu-gcc -static -o ./main ./main.s
 qemu-riscv64 ./main
 

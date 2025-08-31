@@ -131,7 +131,7 @@ void print_ast(Node *node, int depth) {
 }
 
 int main(int argc, char **argv) {
-  FILE *out = fopen("main.s", "w");
+  FILE *out = fopen(argv[3], "w");
 
   if (argc == 2) {
     Token *tok = tokenize(argv[1]);
