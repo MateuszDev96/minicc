@@ -131,23 +131,15 @@ void print_ast(Node *node, int depth) {
 }
 
 int main(int argc, char **argv) {
-  FILE *out = fopen(argv[3], "w");
-
-  if (argc == 2) {
-    Token *tok = tokenize(argv[1]);
-    Function *prog = parse(tok);
-    codegen(prog, out);
-  } else {
-    char *source = read_file(argv[2]);
-    Token *tok = tokenize(source);
-    Function *prog = parse(tok);
-
+  FILE *out = fopen(argv[2], "w");
+  char *source = read_file(argv[1]);
+  Token *tok = tokenize(source);
+  Function *prog = parse(tok);
+  codegen(prog, out);
     // for (Function *fn = prog; fn; fn = fn->next) {
     //   printf("Function: %s\n", fn->name);
     //   print_ast(fn->body, 1);
     // }
-    codegen(prog, out);
-  }
 
   fclose(out);
 
