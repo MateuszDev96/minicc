@@ -1,34 +1,90 @@
 #!/bin/bash
-./build/minicc ./tests/program1/program1.cwe ./tests/program1/program1.s
-riscv64-linux-gnu-gcc -static -o ./tests/program1/program1.exec ./tests/program1/program1.s
-qemu-riscv64 ./tests/program1/program1.exec
 
-if [ $? = 0 ]; then
-  echo "OK program1"
-else
-  echo "FAIL program1"
-  exit 1
-fi
+# Lista testów i ich oczekiwanych kodów wyjścia
+declare -a test_cases=(
+  "program1:0"
+  "program2:42"
+  "program3:114"
+  "program4:41"
+  "program5:7"
+  "program6:9"
+  "program7:70"
+  "program8:4"
+  "program9:1"
+  "program10:1"
+  "program11:2"
+  "program12:0"
+  "program13:1"
+  "program14:1"
+  "program15:0"
+  "program16:1"
+  "program17:0"
+  "program18:0"
+  "program19:1"
+  "program20:1"
+  "program21:0"
+  "program22:1"
+  "program23:0"
+  "program24:0"
+  "program25:1"
+  "program26:1"
+  "program27:0"
+  "program28:3"
+  "program29:3"
+  "program30:3"
+  "program31:8"
+  "program32:1"
+  "program33:2"
+  "program34:3"
+  "program35:8"
+  "program36:6"
+  "program37:3"
+  "program38:8"
+  "program39:3"
+  "program40:3"
+  "program41:2"
+  "program42:2"
+  "program43:55"
+  "program44:3"
+  "program44:3"
+  "program45:10"
+  "program46:3"
+  "program47:5"
+  "program48:10"
+  "program49:55"
+  "program50:3"
+  "program51:3"
+)
 
-./build/minicc ./tests/program2/program2.cwe ./tests/program2/program2.s
-riscv64-linux-gnu-gcc -static -o ./tests/program2/program2.exec ./tests/program2/program2.s
-qemu-riscv64 ./tests/program2/program2.exec
+for entry in "${test_cases[@]}"; do
+  prog="${entry%%:*}"             # Nazwa programu (np. program1)
+  expected="${entry##*:}"         # Oczekiwany kod wyjścia (np. 0)
+  path="./tests/$prog"
 
-if [ $? = 42 ]; then
-  echo "OK program2"
-else
-  echo "FAIL program2"
-  exit 1
-fi
+  if [ ! -d "$path" ]; then
+    echo "POMINIĘTO: brak katalogu $path"
+    continue
+  fi
 
-./build/minicc ./tests/program3/program3.cwe ./tests/program3/program3.s
-riscv64-linux-gnu-gcc -static -o ./tests/program3/program3.exec ./tests/program3/program3.s
-qemu-riscv64 ./tests/program3/program3.exec
+  ./build/minicc "$path/$prog.cwe" "$path/$prog.s"
+  if [ $? -ne 0 ]; then
+    echo "❌ FAIL - błąd kompilacji"
+    exit 1
+  fi
 
-if [ $? = 114 ]; then
-  echo "OK program3"
-else
-  echo "FAIL program3"
-  exit 1
-fi
+  riscv64-linux-gnu-gcc -static -o "$path/$prog.exec" "$path/$prog.s"
+  if [ $? -ne 0 ]; then
+    echo "❌ FAIL - błąd linkowania"
+    exit 1
+  fi
 
+  qemu-riscv64 "$path/$prog.exec"
+  actual_exit_code=$?
+
+  if [ "$actual_exit_code" = "$expected" ]; then
+    echo "✅ OK - Test $prog zakończony pomyślnie"
+  else
+    echo "❌ FAIL - Test $prog nie powiódł się"
+    exit 1
+  fi
+done
