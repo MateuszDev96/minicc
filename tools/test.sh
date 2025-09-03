@@ -1,164 +1,140 @@
 #!/bin/bash
-cat <<EOF | riscv64-linux-gnu-gcc -xc -c -o tmp2.o -
-int ret3() {
-  return 3;
-}
 
-int ret5() {
-  return 5;
-}
+declare -a test_cases=(
+  "program1:0"
+  "program2:42"
+  "program3:114"
+  "program4:41"
+  "program5:7"
+  "program6:9"
+  "program7:70"
+  "program8:4"
+  "program9:1"
+  "program10:1"
+  "program11:2"
+  "program12:0"
+  "program13:1"
+  "program14:1"
+  "program15:0"
+  "program16:1"
+  "program17:0"
+  "program18:0"
+  "program19:1"
+  "program20:1"
+  "program21:0"
+  "program22:1"
+  "program23:0"
+  "program24:0"
+  "program25:1"
+  "program26:1"
+  "program27:0"
+  "program28:3"
+  "program29:3"
+  "program30:3"
+  "program31:8"
+  "program32:1"
+  "program33:2"
+  "program34:3"
+  "program35:8"
+  "program36:6"
+  "program37:3"
+  "program38:8"
+  "program39:3"
+  "program40:3"
+  "program41:2"
+  "program42:2"
+  "program43:55"
+  "program44:3"
+  "program44:3"
+  "program45:10"
+  "program46:3"
+  "program47:5"
+  "program48:10"
+  "program49:55"
+  "program50:3"
+  "program51:3"
+  "program52:5"
+  "program53:3"
+  "program54:5"
+  "program55:5"
+  "program56:7"
+  "program57:7"
+  "program58:5"
+  "program59:8"
+  "program60:8"
 
-int add(int x, int y) {
-  return x + y;
-}
+  # # pointers
+  "program61:3"
+  "program62:3"
+  "program63:4"
+  "program64:5"
+  "program65:0"
+  "program66:1"
+  "program67:2"
+  "program68:3"
+  "program69:4"
+  "program70:5"
+  "program71:0"
+  "program72:1"
+  "program73:2"
+  "program74:3"
+  "program75:4"
+  "program76:5"
+  "program77:8"
+  "program78:8"
+  "program79:8"
+  "program80:32"
+  "program81:96"
+  "program82:32"
+  "program83:8"
+  "program84:9"
+  "program85:9"
+  "program86:8"
+  "program87:8"
+  "program88:1"
 
-int sub(int x, int y) {
-  return x - y;
-}
+  "program89:3"
+  "program90:5"
+  "program91:8"
+  "program92:2"
+  "program93:21"
+  "program94:66"
+  "program95:136"
+  "program96:32"
+  "program97:7"
+  "program98:1"
+  "program99:55"
+)
 
-int add6(int a, int b, int c, int d, int e, int f) {
-  return a + b + c + d + e + f;
-}
+for entry in "${test_cases[@]}"; do
+  prog="${entry%%:*}"             # Nazwa programu (np. program1)
+  expected="${entry##*:}"         # Oczekiwany kod wyjścia (np. 0)
+  path="./tests/$prog"
 
-EOF
+  if [ ! -d "$path" ]; then
+    echo "POMINIĘTO: brak katalogu $path"
+    continue
+  fi
 
-
-assert() {
-  expected="$1"
-  input="$2"
-
-  ./minicc "$input" > tmp.s || exit
-
-  riscv64-linux-gnu-gcc -static -o tmp tmp.s tmp2.o
-  qemu-riscv64-static ./tmp
-
-  actual="$?"
-
-  if [ "$actual" = "$expected" ]; then
-    echo "$input => $actual"
-  else
-    echo "$input => $expected expected, but got $actual"
+  ./build/minicc "$path/$prog.cwe" "$path/$prog.s"
+  if [ $? -ne 0 ]; then
+    echo "❌ FAIL - błąd kompilacji"
     exit 1
   fi
-}
 
-assert 0 'int main() { return 0; }'
-assert 42 'int main() { return 42; }'
-assert 114 'int main() { return 81+42-9; }'
-assert 41 'int main() { return 12 + 34 - 5; }'
-assert 7 'int main() { return 1+2*3; }'
-assert 9 'int main() { return (1+2)*3; }'
-assert 70 'int main() { return 1 + 2 * 3 - 4 / 2 + 5 * (6 + 7); }'
-assert 4 'int main() { return -1+2--3; }'
-assert 1 'int main() { return - -1; }'
-assert 1 'int main() { return - - +1; }'
-assert 2 'int main() { return -1+++++2-----3++++++4; }'
+  riscv64-linux-gnu-gcc -static -o "$path/$prog.exec" "$path/$prog.s"
+  if [ $? -ne 0 ]; then
+    echo "❌ FAIL - błąd linkowania"
+    exit 1
+  fi
 
-assert 0 'int main() { return 0==1; }'
-assert 1 'int main() { return 42==42; }'
-assert 1 'int main() { return 0!=1; }'
-assert 0 'int main() { return 42!=42; }'
+  qemu-riscv64 "$path/$prog.exec"
+  actual_exit_code=$?
 
-assert 1 'int main() { return 0<1; }'
-assert 0 'int main() { return 1<1; }'
-assert 0 'int main() { return 2<1; }'
-assert 1 'int main() { return 0<=1; }'
-assert 1 'int main() { return 1<=1; }'
-assert 0 'int main() { return 2<=1; }'
-
-assert 1 'int main() { return 1>0; }'
-assert 0 'int main() { return 1>1; }'
-assert 0 'int main() { return 1>2; }'
-assert 1 'int main() { return 1>=0; }'
-assert 1 'int main() { return 1>=1; }'
-assert 0 'int main() { return 1>=2; }'
-
-assert 3 'int main() { int a; a=3; return a; }'
-assert 3 'int main() { int a=3; return a; }'
-assert 8 'int main() { int a=3; int z=5; return a+z; }'
-
-assert 1 'int main() { return 1; 2; 3; }'
-assert 2 'int main() { 1; return 2; 3; }'
-assert 3 'int main() { 1; 2; return 3; }'
-
-assert 3 'int main() { int a=3; return a; }'
-assert 8 'int main() { int a=3; int z=5; return a+z; }'
-assert 6 'int main() { int a; int b; a=b=3; return a+b; }'
-assert 3 'int main() { int foo=3; return foo; }'
-assert 8 'int main() { int foo123=3; int bar=5; return foo123+bar; }'
-
-assert 3 'int main() { if (0) return 2; return 3; }'
-assert 3 'int main() { if (1-1) return 2; return 3; }'
-assert 2 'int main() { if (1) return 2; return 3; }'
-assert 2 'int main() { if (2-1) return 2; return 3; }'
-
-assert 55 'int main() { int i=0; int j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }'
-assert 3 'int main() { for (;;) return 3; return 5; }'
-
-assert 10 'int main() { int i=0; while(i<10) i=i+1; return i; }'
-
-assert 3 'int main() { {1; {2;} return 3;} }'
-assert 5 'int main() { ;;; return 5; }'
-
-assert 10 'int main() { int i=0; while(i<10) i=i+1; return i; }'
-assert 55 'int main() { int i=0; int j=0; while(i<=10) {j=i+j; i=i+1;} return j; }'
-
-assert 3 'int main() { int x=3; return *&x; }'
-assert 3 'int main() { int x=3; int *y=&x; int **z=&y; return **z; }'
-assert 5 'int main() { int x=3; int y=5; return *(&x+1); }'
-assert 3 'int main() { int x=3; int y=5; return *(&y-1); }'
-assert 5 'int main() { int x=3; int y=5; return *(&x-(-1)); }'
-assert 5 'int main() { int x=3; int *y=&x; *y=5; return x; }'
-assert 7 'int main() { int x=3; int y=5; *(&x+1)=7; return y; }'
-assert 7 'int main() { int x=3; int y=5; *(&y-2+1)=7; return x; }'
-assert 5 'int main() { int x=3; return (&x+2)-&x+3; }'
-assert 8 'int main() { int x, y; x=3; y=5; return x+y; }'
-assert 8 'int main() { int x=3, y=5; return x+y; }'
-
-assert 3 'int main() { return ret3(); }'
-assert 5 'int main() { return ret5(); }'
-assert 8 'int main() { return add(3, 5); }'
-assert 2 'int main() { return sub(5, 3); }'
-assert 21 'int main() { return add6(1,2,3,4,5,6); }'
-assert 66 'int main() { return add6(1,2,add6(3,4,5,6,7,8),9,10,11); }'
-assert 136 'int main() { return add6(1,2,add6(3,add6(4,5,6,7,8,9),10,11,12,13),14,15,16); }'
-
-assert 32 'int main() { return ret32(); } int ret32() { return 32; }'
-
-assert 7 'int main() { return add2(3,4); } int add2(int x, int y) { return x+y; }'
-assert 1 'int main() { return sub2(4,3); } int sub2(int x, int y) { return x-y; }'
-assert 55 'int main() { return fib(9); } int fib(int x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
-
-assert 3 'int main() { int x[2]; int *y=&x; *y=3; return *x; }'
-assert 3 'int main() { int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *x; }'
-assert 4 'int main() { int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+1); }'
-assert 5 'int main() { int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+2); }'
-
-assert 0 'int main() { int x[2][3]; int *y=x; *y=0; return **x; }'
-assert 1 'int main() { int x[2][3]; int *y=x; *(y+1)=1; return *(*x+1); }'
-assert 2 'int main() { int x[2][3]; int *y=x; *(y+2)=2; return *(*x+2); }'
-assert 3 'int main() { int x[2][3]; int *y=x; *(y+3)=3; return **(x+1); }'
-assert 4 'int main() { int x[2][3]; int *y=x; *(y+4)=4; return *(*(x+1)+1); }'
-assert 5 'int main() { int x[2][3]; int *y=x; *(y+5)=5; return *(*(x+1)+2); }'
-
-assert 0 'int main() { int x[2][3]; int *y=x; y[0]=0; return x[0][0]; }'
-assert 1 'int main() { int x[2][3]; int *y=x; y[1]=1; return x[0][1]; }'
-assert 2 'int main() { int x[2][3]; int *y=x; y[2]=2; return x[0][2]; }'
-assert 3 'int main() { int x[2][3]; int *y=x; y[3]=3; return x[1][0]; }'
-assert 4 'int main() { int x[2][3]; int *y=x; y[4]=4; return x[1][1]; }'
-assert 5 'int main() { int x[2][3]; int *y=x; y[5]=5; return x[1][2]; }'
-
-assert 8 'int main() { int x; return sizeof(x); }'
-assert 8 'int main() { int x; return sizeof x; }'
-assert 8 'int main() { int *x; return sizeof(x); }'
-assert 32 'int main() { int x[4]; return sizeof(x); }'
-assert 96 'int main() { int x[3][4]; return sizeof(x); }'
-assert 32 'int main() { int x[3][4]; return sizeof(*x); }'
-assert 8 'int main() { int x[3][4]; return sizeof(**x); }'
-assert 9 'int main() { int x[3][4]; return sizeof(**x) + 1; }'
-assert 9 'int main() { int x[3][4]; return sizeof **x + 1; }'
-assert 8 'int main() { int x[3][4]; return sizeof(**x + 1); }'
-assert 8 'int main() { int x=1; return sizeof(x=2); }'
-assert 1 'int main() { int x=1; sizeof(x=2); return x; }'
-
-echo OK
+  if [ "$actual_exit_code" = "$expected" ]; then
+    echo "✅ OK - Test $prog zakończony pomyślnie"
+  else
+    echo "❌ FAIL - Test $prog nie powiódł się"
+    exit 1
+  fi
+done

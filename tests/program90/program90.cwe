@@ -1,0 +1,7 @@
+int ret5() {
+  return 5;
+}
+
+int main() {
+  return ret5();
+}
