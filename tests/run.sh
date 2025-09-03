@@ -54,6 +54,30 @@ declare -a test_cases=(
   "program49:55"
   "program50:3"
   "program51:3"
+  "program52:5"
+  "program53:3"
+  "program54:5"
+  "program55:5"
+  "program56:7"
+  "program57:7"
+  "program58:5"
+  "program59:8"
+  "program60:8"
+
+  # pointers
+  "program61:3"
+  "program62:3"
+  "program63:4"
+  "program64:5"
+  "program65:0"
+  "program66:1"
+  "program67:2"
+  "program68:3"
+  "program69:4"
+  "program70:5"
+  "program71:0"
+  "program72:1"
+  "program73:2"
 )
 
 for entry in "${test_cases[@]}"; do
