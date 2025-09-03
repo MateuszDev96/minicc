@@ -57,8 +57,8 @@ main:
   sd ra, 8(sp)
   sd s0, 0(sp)
   mv s0, sp
-  addi sp, sp, -144
-  li a0, 144
+  addi sp, sp, -80
+  li a0, 72
   j .L.return.main
 .L.return.main:
   mv sp, s0

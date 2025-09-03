@@ -1,5 +1,5 @@
 int main() {
-  int x[2][3][3];
+  int a[9];
 
-  return sizeof(x);
+  return sizeof(a);
 }
