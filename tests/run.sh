@@ -78,6 +78,7 @@ declare -a test_cases=(
   "program71:0"
   "program72:1"
   "program73:2"
+  "program74:3"
 )
 
 for entry in "${test_cases[@]}"; do
