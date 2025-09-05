@@ -114,31 +114,21 @@ static void gen_expr(Node *node, FILE *out) {
       Node *arg = node->args;
 
       if (strcmp(node->funcname, "print") == 0) {
-        if (arg && arg->kind == ND_STRING) {
-          gen_expr(arg, out);
-          int len = (int)strlen(arg->str);
-          fprintf(out,
-            "  mv a1, a0\n"
-            "  li a2, %d\n"
-            "  li a0, 1\n"
-            "  li a7, 64\n"
-            "  ecall\n", len);
-          return;
-        } else if (arg && arg->kind == ND_NUM) {
-          gen_expr(arg, out);
-          fprintf(out, "  call print_num\n");
-          return;
-        }
-        int nargs = 0;
         for (Node *a = node->args; a; a = a->next) {
-          gen_expr(a, out);
-          push(out);
-          nargs++;
+          if (a->kind == ND_STRING) {
+            gen_expr(a, out);
+            int len = (int)strlen(a->str);
+            fprintf(out,
+              "  mv a1, a0\n"
+              "  li a2, %d\n"
+              "  li a0, 1\n"
+              "  li a7, 64\n"
+              "  ecall\n", len);
+          } else {
+            gen_expr(a, out);
+            fprintf(out, "  call print_num\n");
+          }
         }
-        for (int i = nargs - 1; i >= 0; i--) {
-          pop(argreg[i], out);
-        }
-        fprintf(out, "  call %s\n", node->funcname);
         gen_newline(out);
         return;
       }
@@ -217,6 +207,7 @@ static void gen_stmt(Node *node, FILE *out) {
       fprintf(out, ".L.end.%d:\n", c);
       return;
     }
+
     case ND_FOR: {
       int c = count();
       if (node->init)
@@ -233,17 +224,21 @@ static void gen_stmt(Node *node, FILE *out) {
       fprintf(out, ".L.end.%d:\n", c);
       return;
     }
+
     case ND_BLOCK:
       for (Node *n = node->body; n; n = n->next)
         gen_stmt(n, out);
       return;
+
     case ND_RETURN:
       gen_expr(node->lhs, out);
       fprintf(out, "  j .L.return.%s\n", current_fn->name);
       return;
+
     case ND_EXPR_STMT:
       gen_expr(node->lhs, out);
       return;
+
     default:
       break;
   }
@@ -253,11 +248,12 @@ static void gen_stmt(Node *node, FILE *out) {
 static void assign_lvar_offsets(Function *prog) {
   for (Function *fn = prog; fn; fn = fn->next) {
     int offset = 0;
+
     for (Obj *var = fn->locals; var; var = var->next) {
       offset += align_to(var->ty->size, 8);
       var->offset = -offset;
+    }
 
-}
     fn->stack_size = align_to(offset, 16);
   }
 }
@@ -301,8 +297,8 @@ static void gen_print_num_function(FILE *out) {
     "  mv a2, s2           # length\n"
     "  li a7, 64           # syscall write\n"
     "  ecall\n"
-    // dodajemy newline
-    "  la a1, .L.nl\n"
+    // dodajemy spację
+    "  la a1, .L.space\n"
     "  li a2, 1\n"
     "  li a0, 1\n"
     "  li a7, 64\n"
@@ -324,6 +320,7 @@ void codegen(Function *prog, FILE *out) {
   // etykieta newline w .rodata
   fprintf(out, "  .section .rodata\n");
   fprintf(out, ".L.nl:\n  .asciz \"\\n\"\n");
+  fprintf(out, ".L.space:\n  .asciz \" \"\n");
   fprintf(out, "  .section .text\n");
 
   gen_print_num_function(out);
@@ -337,7 +334,9 @@ void codegen(Function *prog, FILE *out) {
     fprintf(out, "  sd ra, 8(sp)\n");
     fprintf(out, "  sd s0, 0(sp)\n");
     fprintf(out, "  mv s0, sp\n");
-    fprintf(out, "  addi sp, sp, -%d\n", fn->stack_size);
+
+    fprintf(out, "  li t0, %d\n", fn->stack_size);
+    fprintf(out, "  sub sp, sp, t0\n");
 
     int i = 0;
     for (Obj *var = fn->params; var; var = var->next) {

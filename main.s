@@ -1,6 +1,8 @@
   .section .rodata
 .L.nl:
   .asciz "\n"
+.L.space:
+  .asciz " "
   .section .text
   .globl print_num
 print_num:
@@ -38,7 +40,7 @@ print_num:
   mv a2, s2           # length
   li a7, 64           # syscall write
   ecall
-  la a1, .L.nl
+  la a1, .L.space
   li a2, 1
   li a0, 1
   li a7, 64
@@ -57,8 +59,18 @@ main:
   sd ra, 8(sp)
   sd s0, 0(sp)
   mv s0, sp
-  addi sp, sp, -80
-  li a0, 72
+  li t0, 8000000
+  sub sp, sp, t0
+  li a0, 8000000
+  call print_num
+  li a0, 11
+  call print_num
+  la a1, .L.nl
+  li a2, 1
+  li a0, 1
+  li a7, 64
+  ecall
+  li a0, 0
   j .L.return.main
 .L.return.main:
   mv sp, s0
