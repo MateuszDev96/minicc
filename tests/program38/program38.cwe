@@ -1,6 +1,6 @@
-func main(): int {
-  int foo123 = 3;
-  int bar = 5;
+func main(): int32 {
+  int32 foo123 = 3;
+  int32 bar = 5;
   
   return foo123 + bar;
 }

@@ -1,7 +1,7 @@
-func add6(int a, int b, int c, int d, int e, int f): int {
+func add6(int32 a, int32 b, int32 c, int32 d, int32 e, int32 f): int32 {
   return a + b + c + d + e + f;
 }
 
-func main(): int {
+func main(): int32 {
   return add6(1, 2, 3, 4, 5, 6);
 }

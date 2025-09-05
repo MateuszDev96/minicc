@@ -1,5 +1,5 @@
-func main(): int {
-  int x[3];
+func main(): int32 {
+  int32 x[3];
   *x = 3;
   *(x + 1) = 4;
   *(x + 2) = 5;

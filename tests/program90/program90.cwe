@@ -1,7 +1,7 @@
-func ret5(): int {
+func ret5(): int32 {
   return 5;
 }
 
-func main(): int {
+func main(): int32 {
   return ret5();
 }

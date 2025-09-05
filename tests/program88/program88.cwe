@@ -1,5 +1,5 @@
-func main(): int {
-  int x = 1;
+func main(): int32 {
+  int32 x = 1;
   sizeof(x = 2);
 
   return x;

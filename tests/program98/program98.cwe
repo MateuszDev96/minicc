@@ -1,8 +1,8 @@
-func sub2(int x, int y): int {
+func sub2(int32 x, int32 y): int32 {
   return x - y;
 }
 
-func main(): int {
+func main(): int32 {
   return sub2(4, 3);
 }
 

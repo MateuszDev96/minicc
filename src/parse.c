@@ -92,7 +92,7 @@ static int get_number(Token *tok) {
 }
 
 static Type *declspec(Token **rest, Token *tok) {
-  *rest = skip(tok, "int");
+  *rest = skip(tok, "int32");
 
   return ty_int;
 }
@@ -254,7 +254,7 @@ static Node *compound_stmt(Token **rest, Token *tok) {
   Node *cur = &head;
 
   while (!equal(tok, "}")) {
-    if (equal(tok, "int")) {
+    if (equal(tok, "int32")) {
       cur = cur->next = declaration(&tok, tok);
     } else {
       cur = cur->next = stmt(&tok, tok);

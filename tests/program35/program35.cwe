@@ -1,6 +1,6 @@
-func main(): int {
-  int a = 3;
-  int z = 5;
+func main(): int32 {
+  int32 a = 3;
+  int32 z = 5;
   
   return a + z;
 }

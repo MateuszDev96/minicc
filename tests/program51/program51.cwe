@@ -1,7 +1,7 @@
-func main(): int {
-  int x = 3;
-  int *y = &x;
-  int **z = &y;
+func main(): int32 {
+  int32 x = 3;
+  int32 *y = &x;
+  int32 **z = &y;
   
   return **z;
 }

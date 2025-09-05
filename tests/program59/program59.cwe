@@ -1,5 +1,5 @@
-func main(): int {
-  int x, y;
+func main(): int32 {
+  int32 x, y;
   x = 3;
   y = 5;
   
