@@ -1,4 +1,4 @@
-int ret32() {
+func ret32(): int {
   return 32;
 }
 

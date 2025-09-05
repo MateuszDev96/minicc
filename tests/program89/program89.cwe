@@ -1,4 +1,4 @@
-int ret3() {
+func ret3(): int {
   return 3;
 }
 

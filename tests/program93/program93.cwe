@@ -1,4 +1,4 @@
-int add6(int a, int b, int c, int d, int e, int f) {
+func add6(int a, int b, int c, int d, int e, int f): int {
   return a + b + c + d + e + f;
 }
 
