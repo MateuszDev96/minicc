@@ -303,6 +303,7 @@ static void gen_print_num_function(FILE *out) {
     "  li a0, 1\n"
     "  li a7, 64\n"
     "  ecall\n"
+    
     "  li a0, 0            # return 0\n"
     "  ld s0, 0(sp)\n"
     "  ld s1, 8(sp)\n"

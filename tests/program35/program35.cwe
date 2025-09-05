@@ -1,4 +1,4 @@
-int main() {
+func main(): int {
   int a = 3;
   int z = 5;
   

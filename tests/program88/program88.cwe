@@ -1,4 +1,4 @@
-int main() {
+func main(): int {
   int x = 1;
   sizeof(x = 2);
 

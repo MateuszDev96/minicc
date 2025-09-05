@@ -1,4 +1,4 @@
-int main() {
+func main(): int {
   int a[1000000];
 
   print(sizeof(a), 11, 1222, sizeof(a));

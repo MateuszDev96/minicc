@@ -2,7 +2,7 @@ int sub2(int x, int y) {
   return x - y;
 }
 
-int main() {
+func main(): int {
   return sub2(4, 3);
 }
 

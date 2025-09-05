@@ -1,4 +1,4 @@
-int main() {
+func main(): int {
   int x[2][3];
   int *y = x;
   y[1] = 1;

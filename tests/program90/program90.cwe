@@ -2,6 +2,6 @@ int ret5() {
   return 5;
 }
 
-int main() {
+func main(): int {
   return ret5();
 }

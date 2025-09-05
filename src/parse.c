@@ -565,21 +565,68 @@ static void create_param_lvars(Type *param) {
   }
 }
 
+static Type *parse_parameter_list(Token **rest, Token *tok) {
+  Type head = {};
+  Type *cur = &head;
+
+  while (!equal(tok, ")")) {
+    if (cur != &head) {
+      tok = skip(tok, ",");
+    }
+
+    // Parsujemy typ (np. int)
+    Type *basety = declspec(&tok, tok);
+    // Parsujemy nazwę parametru (identyfikator)
+    if (tok->kind != TK_IDENT) {
+      error_tok(tok, "expected parameter name");
+    }
+    char *param_name = get_ident(tok);
+    tok = tok->next;
+
+    // Tworzymy typ parametru z nazwą
+    Type *ty = declarator(&tok, tok, basety);
+    ty->name = tok;  // lub przypisz nazwę inaczej, jeśli trzeba
+
+    cur = cur->next = copy_type(ty);
+    cur->name = tok; // ustaw nazwę (token z nazwą parametru)
+
+    // Jeśli chcesz zapisać nazwę parametru do struktury, trzeba dopasować typy
+  }
+
+  *rest = tok;
+  return head.next;
+}
+
 static Function *function(Token **rest, Token *tok) {
-  Type *ty = declspec(&tok, tok);
-  ty = declarator(&tok, tok, ty);
+  // 1: wymagaj 'func'
+  tok = skip(tok, "func");
 
+  // 2: nazwa funkcji
+  char *fname = get_ident(tok);
+  tok = tok->next;
+
+  // 3: params
+  tok = skip(tok, "(");
+  Type *param_ty = parse_parameter_list(&tok, tok);
+  tok = skip(tok, ")");
+
+  // 4: dwukropek
+  tok = skip(tok, ":");
+
+  // 5: typ zwracany (np. int)
+  Type *return_ty = declspec(&tok, tok);
+
+  // 6: ciało
   locals = NULL;
-
   Function *fn = calloc(1, sizeof(Function));
-  fn->name = get_ident(ty->name);
-  create_param_lvars(ty->params);
+  fn->name = fname;
+  create_param_lvars(return_ty->params);
   fn->params = locals;
-
   tok = skip(tok, "{");
   fn->body = compound_stmt(rest, tok);
   fn->locals = locals;
 
+  // Możesz chcieć przypisać fn->return_ty = return_ty lub coś takiego
   return fn;
 }
 

@@ -1,4 +1,4 @@
-int main() {
+func main(): int {
   int foo = 3;
   
   return foo;

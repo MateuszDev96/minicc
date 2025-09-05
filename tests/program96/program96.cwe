@@ -2,6 +2,6 @@ int ret32() {
   return 32;
 }
 
-int main() {
+func main(): int {
   return ret32();
 }
