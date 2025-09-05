@@ -53,6 +53,22 @@ print_num:
   ld ra, 32(sp)
   addi sp, sp, 112
   ret
+  .globl hehe
+hehe:
+  addi sp, sp, -16
+  sd ra, 8(sp)
+  sd s0, 0(sp)
+  mv s0, sp
+  li t0, 0
+  sub sp, sp, t0
+  li a0, 1
+  j .L.return.hehe
+.L.return.hehe:
+  mv sp, s0
+  ld s0, 0(sp)
+  ld ra, 8(sp)
+  addi sp, sp, 16
+  ret
   .globl main
 main:
   addi sp, sp, -16
@@ -68,6 +84,8 @@ main:
   li a0, 1222
   call print_num
   li a0, 8000000
+  call print_num
+  call hehe
   call print_num
   la a1, .L.nl
   li a2, 1
