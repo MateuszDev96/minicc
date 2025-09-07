@@ -91,10 +91,63 @@ static int get_number(Token *tok) {
   return tok->val;
 }
 
-static Type *declspec(Token **rest, Token *tok) {
-  *rest = skip(tok, "int32");
+bool starts_with(char *str, const char *prefix) {
+  return strncmp(str, prefix, strlen(prefix)) == 0;
+}
 
-  return ty_int;
+Type *new_type(TypeKind kind, int size) {
+  Type *ty = calloc(1, sizeof(Type));
+  ty->kind = kind;
+  ty->size = size;
+  return ty;
+}
+
+int atoi(const char *s) {
+  int val = 0;
+  while (*s >= '0' && *s <= '9') {
+    val = val * 10 + (*s - '0');
+    s++;
+  }
+  return val;
+}
+
+static bool is_power_of_two(int n) {
+  return n > 0 && (n & (n - 1)) == 0;
+}
+
+static Type *declspec(Token **rest, Token *tok) {
+  if (tok->kind == TK_IDENT && starts_with(tok->loc, "int")) {
+    int len = tok->len;
+    int suffix_len = len - 3; // długość liczby po "int"
+    
+    char buf[16];  // powinno wystarczyć na "32" lub "64"
+    if (suffix_len >= sizeof(buf)) {
+      error_tok(tok, "integer size too long");
+    }
+
+    memcpy(buf, tok->loc + 3, suffix_len);
+    buf[suffix_len] = '\0';
+
+    int bits = atoi(buf);
+
+    if (bits == 0 || bits % 8 != 0) {
+      error_tok(tok, "invalid int size");
+    }
+
+    if (!is_power_of_two(bits)) {
+      error_tok(tok, "int size must be a power of 2");
+    }
+
+    *rest = tok->next;
+    Type *ty = new_type(TY_INT, bits / 8);
+    fprintf(stderr, "Declared type %.*s with size %d\n", tok->len, tok->loc, ty->size);
+    return ty;
+
+    // return new_type(TY_INT, bits / 8);
+  }
+
+  error_tok(tok, "expected a type");
+  return NULL;
 }
 
 static Type *func_params(Token **rest, Token *tok, Type *ty) {
@@ -274,7 +327,7 @@ static Node *compound_stmt(Token **rest, Token *tok) {
   Node *cur = &head;
 
   while (!equal(tok, "}")) {
-    if (equal(tok, "int32")) {
+    if (tok->kind == TK_IDENT && starts_with(tok->loc, "int")) {
       cur = cur->next = declaration(&tok, tok);
     } else {
       cur = cur->next = stmt(&tok, tok);
@@ -377,53 +430,59 @@ static Node *new_add(Node *lhs, Node *rhs, Token *tok) {
   add_type(lhs);
   add_type(rhs);
 
-  if (is_integer(lhs->ty) && is_integer(rhs->ty)) {
+  // int + int
+  if (is_integer(lhs->ty) && is_integer(rhs->ty))
     return new_binary(ND_ADD, lhs, rhs, tok);
+
+  // ptr + int lub int + ptr
+  if (lhs->ty->kind == TY_PTR && is_integer(rhs->ty)) {
+    rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+    add_type(rhs);
+    Node *node = new_binary(ND_ADD, lhs, rhs, tok);
+    node->ty = lhs->ty;
+    return node;
   }
 
-  if (lhs->ty->base && rhs->ty->base) {
-    error_tok(tok, "invalid operands");
+  if (is_integer(lhs->ty) && rhs->ty->kind == TY_PTR) {
+    lhs = new_binary(ND_MUL, lhs, new_num(rhs->ty->base->size, tok), tok);
+    add_type(lhs);
+    Node *node = new_binary(ND_ADD, rhs, lhs, tok);
+    node->ty = rhs->ty;
+    return node;
   }
 
-  if (!lhs->ty->base && rhs->ty->base) {
-    Node *tmp = lhs;
-    lhs = rhs;
-    rhs = tmp;
-  }
-
-  rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
-
-  return new_binary(ND_ADD, lhs, rhs, tok);
+  error_tok(tok, "invalid operands for addition");
+  return NULL;
 }
 
 static Node *new_sub(Node *lhs, Node *rhs, Token *tok) {
   add_type(lhs);
   add_type(rhs);
 
-  if (is_integer(lhs->ty) && is_integer(rhs->ty)) {
+  // int - int
+  if (is_integer(lhs->ty) && is_integer(rhs->ty))
     return new_binary(ND_SUB, lhs, rhs, tok);
-  }
 
-  if (lhs->ty->base && is_integer(rhs->ty)) {
+  // ptr - int
+  if (lhs->ty->kind == TY_PTR && is_integer(rhs->ty)) {
     rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
     add_type(rhs);
     Node *node = new_binary(ND_SUB, lhs, rhs, tok);
     node->ty = lhs->ty;
-
     return node;
   }
 
-  if (lhs->ty->base && rhs->ty->base) {
-    Node *node = new_binary(ND_SUB, lhs, rhs, tok);
-    node->ty = ty_int;
-
-    return new_binary(ND_DIV, node, new_num(lhs->ty->base->size, tok), tok);
+  // ptr - ptr (wynik: int o rozmiarze bazowego typu)
+  if (lhs->ty->kind == TY_PTR && rhs->ty->kind == TY_PTR) {
+    Node *diff = new_binary(ND_SUB, lhs, rhs, tok);
+    diff->ty = new_type(TY_INT, lhs->ty->base->size);  // typ ptrdiff_t
+    return new_binary(ND_DIV, diff, new_num(lhs->ty->base->size, tok), tok);
   }
 
-  error_tok(tok, "invalid operands");
-
+  error_tok(tok, "invalid operands for subtraction");
   return NULL;
 }
+
 
 static Node *add(Token **rest, Token *tok) {
   Node *node = mul(&tok, tok);
