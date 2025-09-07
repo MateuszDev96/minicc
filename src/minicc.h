@@ -123,8 +123,6 @@ struct Type {
   Type *next;
 };
 
-extern Type *ty_int;
-
 bool is_integer(Type *ty);
 Type *copy_type(Type *ty);
 Type *pointer_to(Type *base);
