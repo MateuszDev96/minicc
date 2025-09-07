@@ -37,7 +37,14 @@ static int align_to(int n, int align) {
 static void gen_addr(Node *node, FILE *out) {
   switch (node->kind) {
     case ND_VAR:
-      fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
+      if (node->var->offset >= -2048 && node->var->offset <= 2047) {
+        // mieści się w 12-bitowym natychmiastowym — OK
+        fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
+      } else {
+        // za duży offset — musimy to obejść
+        fprintf(out, "  li t0, %d\n", node->var->offset);
+        fprintf(out, "  add a0, s0, t0\n");
+      }
       return;
     case ND_DEREF:
       gen_expr(node->lhs, out);
@@ -49,8 +56,10 @@ static void gen_addr(Node *node, FILE *out) {
 }
 
 static void load(Type *ty, FILE *out) {
-  if (ty->kind == TY_ARRAY)
+  if (ty->kind == TY_ARRAY) {
     return;
+  }
+
   fprintf(out, "  ld a0, 0(a0)\n");
 }
 
@@ -70,38 +79,45 @@ static void gen_newline(FILE *out) {
 
 static void gen_expr(Node *node, FILE *out) {
   switch (node->kind) {
-    case ND_NUM:
+    case ND_NUM: {
       gen_mov_imm64((unsigned long long)node->val, out);
       return;
+    }
 
-    case ND_NEG:
+    case ND_NEG: {
       gen_expr(node->lhs, out);
       fprintf(out, "  neg a0, a0\n");
       return;
+    }
 
-    case ND_VAR:
+    case ND_VAR: {
       gen_addr(node, out);
       load(node->ty, out);
       return;
+    }
 
-    case ND_DEREF:
+    case ND_DEREF: {
       gen_expr(node->lhs, out);
       load(node->ty, out);
       return;
-
-    case ND_ADDR:
+    }
+      
+    case ND_ADDR: {
       gen_addr(node->lhs, out);
       return;
+    }
 
-    case ND_ASSIGN:
+    case ND_ASSIGN: {
       gen_addr(node->lhs, out);
       push(out);
       gen_expr(node->rhs, out);
       store(out);
       return;
+    }
 
     case ND_STRING: {
       int label = count();
+
       fprintf(out, "  .section .rodata\n");
       fprintf(out, ".L.str.%d:\n", label);
       fprintf(out, "  .asciz \"%s\"\n", node->str);
@@ -139,9 +155,11 @@ static void gen_expr(Node *node, FILE *out) {
         push(out);
         nargs++;
       }
+      
       for (int i = nargs - 1; i >= 0; i--) {
         pop(argreg[i], out);
       }
+
       fprintf(out, "  call %s\n", node->funcname);
       return;
     }

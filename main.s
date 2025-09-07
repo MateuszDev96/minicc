@@ -75,17 +75,69 @@ main:
   sd ra, 8(sp)
   sd s0, 0(sp)
   mv s0, sp
-  li t0, 8000000
+  li t0, 8000
   sub sp, sp, t0
-  li a0, 8000000
-  call print_num
-  li a0, 11
-  call print_num
-  li a0, 1222
-  call print_num
-  li a0, 8000000
-  call print_num
-  call hehe
+  li a0, 8
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 1
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  mul a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li t0, -8000
+  add a0, s0, t0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 9
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  li a0, 8
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 2
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  mul a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li t0, -8000
+  add a0, s0, t0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 9
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  li a0, 8
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 3
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  mul a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li t0, -8000
+  add a0, s0, t0
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  li a0, 7
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  sd a0, 0(a1)
+  li a0, 8
   call print_num
   la a1, .L.nl
   li a2, 1

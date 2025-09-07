@@ -3,9 +3,15 @@ func hehe(): int32 {
 }
 
 func main(): int32 {
-  int32 a[1000000];
+  int32 a[1000];
 
-  print(sizeof(a), 11, 1222, sizeof(a), hehe());
+  a[1] = 9;
+  a[2] = 9;
+  a[3] = 7;
+
+  // print(a[1], a[2], a[3], sizeof(a[0]), hehe());
+
+  print(sizeof(a[0]));
 
   return 0;
 }

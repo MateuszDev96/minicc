@@ -1,5 +1,7 @@
 func main(): int32 {
   int32 a = 3;
+
+  // print("duplicated with 31");
   
   return a;
 }
