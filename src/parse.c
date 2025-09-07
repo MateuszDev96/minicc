@@ -139,11 +139,7 @@ static Type *declspec(Token **rest, Token *tok) {
     }
 
     *rest = tok->next;
-    Type *ty = new_type(TY_INT, bits / 8);
-    fprintf(stderr, "Declared type %.*s with size %d\n", tok->len, tok->loc, ty->size);
-    return ty;
-
-    // return new_type(TY_INT, bits / 8);
+    return new_type(TY_INT, bits / 8);
   }
 
   error_tok(tok, "expected a type");

@@ -80,6 +80,7 @@ typedef enum {
   ND_VAR,       // Variable
   ND_NUM,       // Integer
   ND_STRING,    // String
+  ND_CAST
 } NodeKind;
 
 typedef struct Node Node;

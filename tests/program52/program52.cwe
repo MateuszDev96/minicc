@@ -1,9 +1,9 @@
 func main(): int32 {
-  int32 x = 3;
-  int32 y = 5;
+  int64 x = 3;
+  int64 y = 5;
 
   print(sizeof(x)); // logs 4
-  print(*(&x + 1)); // logs 21474836480
+  print(*(&x - 23434)); // logs 21474836480
   
   return *(&x + 1);
 }

@@ -1,13 +1,8 @@
-func hehe(): int32 {
-  return 1;
-}
-
 func main(): int32 {
-  int32 a[1000];
+  int32 a = 1;
+  int64 b = 9223372036854776000;
 
-  // print(a[1], a[2], a[3], sizeof(a[0]), hehe());
-
-  print(sizeof(a[0]));
+  print(a + b);
 
   return 0;
 }

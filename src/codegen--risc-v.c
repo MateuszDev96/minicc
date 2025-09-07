@@ -45,18 +45,18 @@ static void gen_addr(Node *node, FILE *out) {
   switch (node->kind) {
     case ND_VAR:
       if (node->var->offset >= -2048 && node->var->offset <= 2047) {
-        // Jeżeli offset mieści się w 12-bitowym natychmiastowym — OK
         fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
       } else {
-        // Za duży offset — musimy to obejść
         fprintf(out, "  li t0, %d\n", node->var->offset);
         fprintf(out, "  add a0, s0, t0\n");
       }
+
       return;
-    case ND_DEREF:
-      gen_expr(node->lhs, out);
-      load(node->ty, out);
-      return;
+    case ND_DEREF: {
+        gen_expr(node->lhs, out);
+        load(node->ty, out);
+        return;
+    }
     default:
       break;
   }
