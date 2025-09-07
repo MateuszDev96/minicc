@@ -34,36 +34,33 @@ static int align_to(int n, int align) {
     return (n + align - 1) / align * align;
 }
 
-static void gen_addr(Node *node, FILE *out) {
-    switch (node->kind) {
-        case ND_VAR:
-            fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
-            return;
-        case ND_DEREF:
-            gen_expr(node->lhs, out);
-            return;
-        case ND_ADD: {
-            // jeśli masz coś jak &x + 1, to rozwiń tutaj adres
-            if (node->lhs->kind == ND_ADDR && node->rhs->kind == ND_NUM) {
-                gen_addr(node->lhs->lhs, out); // adres zmiennej
-                fprintf(out, "  li t0, %d\n", node->lhs->lhs->ty->size); 
-                fprintf(out, "  li t1, %lld\n", node->rhs->val); 
-                fprintf(out, "  mul t1, t1, t0\n");
-                fprintf(out, "  add a0, a0, t1\n");
-                return;
-            }
-            // inne przypadki
-            break;
-        }
-        default:
-            error_tok(node->tok, "not an lvalue");
+void load(Type *ty, FILE *out) {
+    if (ty->kind == TY_ARRAY) {
+        return;
     }
+    fprintf(out, "  ld a0, 0(a0)\n");
 }
 
-
-static void load(Type *ty, FILE *out) {
-    if (ty->kind == TY_ARRAY) return;
-    fprintf(out, "  ld a0, 0(a0)\n");
+static void gen_addr(Node *node, FILE *out) {
+  switch (node->kind) {
+    case ND_VAR:
+      if (node->var->offset >= -2048 && node->var->offset <= 2047) {
+        // Jeżeli offset mieści się w 12-bitowym natychmiastowym — OK
+        fprintf(out, "  addi a0, s0, %d\n", node->var->offset);
+      } else {
+        // Za duży offset — musimy to obejść
+        fprintf(out, "  li t0, %d\n", node->var->offset);
+        fprintf(out, "  add a0, s0, t0\n");
+      }
+      return;
+    case ND_DEREF:
+      gen_expr(node->lhs, out);
+      load(node->ty, out);
+      return;
+    default:
+      break;
+  }
+  error_tok(node->tok, "not an lvalue");
 }
 
 static void store(FILE *out) {
