@@ -11,7 +11,13 @@ func main(): int32 {
 
   // print(a[1], a[2], a[3], sizeof(a[0]), hehe());
 
-  print(sizeof(a[0]));
+  if (1) {
+    print(0);
+  } else {
+    print(1);
+  }
+
+  // print(sizeof(a[0]));
 
   return 0;
 }

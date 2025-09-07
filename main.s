@@ -137,13 +137,25 @@ main:
   ld a1, 0(sp)
   addi sp, sp, 8
   sd a0, 0(a1)
-  li a0, 8
+  li a0, 1
+  beqz a0, .L.else.1
+  li a0, 0
   call print_num
   la a1, .L.nl
   li a2, 1
   li a0, 1
   li a7, 64
   ecall
+  j .L.end.1
+.L.else.1:
+  li a0, 1
+  call print_num
+  la a1, .L.nl
+  li a2, 1
+  li a0, 1
+  li a7, 64
+  ecall
+.L.end.1:
   li a0, 0
   j .L.return.main
 .L.return.main:
