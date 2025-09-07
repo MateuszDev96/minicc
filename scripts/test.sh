@@ -1,4 +1,5 @@
 #!/bin/bash
+./scripts/build.sh
 
 declare -a test_cases=(
   "program1:0"
@@ -44,7 +45,6 @@ declare -a test_cases=(
   "program41:2"
   "program42:2"
   "program43:55"
-  "program44:3"
   "program44:3"
   "program45:10"
   "program46:3"
@@ -118,7 +118,7 @@ for entry in "${test_cases[@]}"; do
 
   ./build/minicc "$path/$prog.cwe" "$path/$prog.s"
   if [ $? -ne 0 ]; then
-    echo "❌ FAIL - błąd kompilacji"
+    echo "❌ FAIL - błąd kompilacji $prog"
     exit 1
   fi
 

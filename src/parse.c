@@ -187,7 +187,6 @@ static Node *stmt(Token **rest, Token *tok) {
     Node *node = new_node(ND_RETURN, tok);
     node->lhs = expr(&tok, tok->next);
     *rest = skip(tok, ";");
-    
     return node;
   }
 
@@ -196,21 +195,30 @@ static Node *stmt(Token **rest, Token *tok) {
     tok = skip(tok->next, "(");
     node->cond = expr(&tok, tok);
     tok = skip(tok, ")");
-    node->then = stmt(&tok, tok);
+
+    if (!equal(tok, "{")) {
+      error_tok(tok, "expected '{' after 'if' condition");
+    }
+
+    node->then = compound_stmt(&tok, tok->next);
 
     if (equal(tok, "else")) {
-      node->els = stmt(&tok, tok->next);
+      tok = tok->next;
+      
+      if (!equal(tok, "{")) {
+        error_tok(tok, "expected '{' after 'else'");
+      }
+
+      node->els = compound_stmt(&tok, tok->next);
     }
 
     *rest = tok;
-
     return node;
   }
 
   if (equal(tok, "for")) {
     Node *node = new_node(ND_FOR, tok);
     tok = skip(tok->next, "(");
-
     node->init = expr_stmt(&tok, tok);
 
     if (!equal(tok, ";")) {
@@ -225,8 +233,13 @@ static Node *stmt(Token **rest, Token *tok) {
 
     tok = skip(tok, ")");
 
-    node->then = stmt(rest, tok);
+    if (!equal(tok, "{")) {
+      error_tok(tok, "expected '{' after 'for' clause");
+    }
 
+    node->then = compound_stmt(&tok, tok->next);
+
+    *rest = tok;
     return node;
   }
 
@@ -235,8 +248,15 @@ static Node *stmt(Token **rest, Token *tok) {
     tok = skip(tok->next, "(");
     node->cond = expr(&tok, tok);
     tok = skip(tok, ")");
-    node->then = stmt(rest, tok);
 
+    // Wymuś nawiasy blokowe po while
+    if (!equal(tok, "{")) {
+      error_tok(tok, "expected '{' after 'while' condition");
+    }
+
+    node->then = compound_stmt(&tok, tok->next);
+
+    *rest = tok;
     return node;
   }
 
