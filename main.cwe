@@ -3,21 +3,11 @@ func hehe(): int32 {
 }
 
 func main(): int32 {
-  int32 a[1000];
+  int32 a = 100;
+  int32 b = 200;
+  int32 c = 100000000;
 
-  a[1] = 9;
-  a[2] = 9;
-  a[3] = 7;
-
-  // print(a[1], a[2], a[3], sizeof(a[0]), hehe());
-
-  if (1) {
-    print(0);
-  } else {
-    print(1);
-  }
-
-  // print(sizeof(a[0]));
+  print(a + b + c);
 
   return 0;
 }

@@ -75,87 +75,51 @@ main:
   sd ra, 8(sp)
   sd s0, 0(sp)
   mv s0, sp
-  li t0, 8000
+  li t0, 32
   sub sp, sp, t0
-  li a0, 8
+  addi a0, s0, -24
   addi sp, sp, -8
   sd a0, 0(sp)
-  li a0, 1
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  mul a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li t0, -8000
-  add a0, s0, t0
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  add a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li a0, 9
+  li a0, 100
   ld a1, 0(sp)
   addi sp, sp, 8
   sd a0, 0(a1)
-  li a0, 8
+  addi a0, s0, -16
   addi sp, sp, -8
   sd a0, 0(sp)
-  li a0, 2
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  mul a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li t0, -8000
-  add a0, s0, t0
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  add a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li a0, 9
+  li a0, 200
   ld a1, 0(sp)
   addi sp, sp, 8
   sd a0, 0(a1)
-  li a0, 8
+  addi a0, s0, -8
   addi sp, sp, -8
   sd a0, 0(sp)
-  li a0, 3
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  mul a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li t0, -8000
-  add a0, s0, t0
-  ld a1, 0(sp)
-  addi sp, sp, 8
-  add a0, a0, a1
-  addi sp, sp, -8
-  sd a0, 0(sp)
-  li a0, 7
+  li a0, 100000000
   ld a1, 0(sp)
   addi sp, sp, 8
   sd a0, 0(a1)
-  li a0, 1
-  beqz a0, .L.else.1
-  li a0, 0
+  addi a0, s0, -8
+  ld a0, 0(a0)
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -16
+  ld a0, 0(a0)
+  addi sp, sp, -8
+  sd a0, 0(sp)
+  addi a0, s0, -24
+  ld a0, 0(a0)
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
+  ld a1, 0(sp)
+  addi sp, sp, 8
+  add a0, a0, a1
   call print_num
   la a1, .L.nl
   li a2, 1
   li a0, 1
   li a7, 64
   ecall
-  j .L.end.1
-.L.else.1:
-  li a0, 1
-  call print_num
-  la a1, .L.nl
-  li a2, 1
-  li a0, 1
-  li a7, 64
-  ecall
-.L.end.1:
   li a0, 0
   j .L.return.main
 .L.return.main:
